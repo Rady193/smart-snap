@@ -1,5 +1,34 @@
 # Release notes
 
+## 1.1.2 — 16 November 2026
+
+The handbook in the SCAFFApps style, and scrollbars in the SCAFFApps colours.
+
+### Downloads
+
+| File | Size | SHA-256 |
+|---|---|---|
+| `Smart-Snap-Setup-1.1.2.exe` | 78.0 MB | `D2243F9F80E16B54C25CF555066BDAC14C3F7A40F0E9CC9AA2DCFAD7CA795A31` |
+| `Smart-Snap-Handbook-1.1.2.pdf` | 3.6 MB | `98A18DF33F0931C33563959B2E9AD43306AFC9FC8ECE75B4BB526B8BE4AFCD3A` |
+
+For 64-bit Windows 10 and 11. Not code-signed, so Windows SmartScreen may ask for confirmation on first run.
+
+### Changed
+
+- **The handbook**, `Smart-Snap-Handbook-1.1.2.pdf`: 12 pages with pictures in the SCAFFApps brochure style. The SCAFFApps Suite opens it from Handbooks.
+- **"Published by SCAFFApps - www.scaffapps.com"** at the end of Settings and of the sign-up window.
+- **Scrollbars in the SCAFFApps style**: a slim purple bar on no track, wider under the pointer; never the grey Windows bar with its arrows.
+
+### Updating from 1.1.1
+
+- Settings > Updates > **Update now**, or **Update** in the SCAFFApps Suite.
+
+### Tested
+
+- Updated from 1.1.1 by the installed SCAFFApps Suite 1.0.1, against a stand-in for GitHub offering this installer: downloaded, checked against both published checksums, Windows' permission, installed in 9 seconds; Windows lists 1.1.2.
+- Microsoft Defender finds nothing in the installer.
+- The handbook's pictures were taken from this version, in a test profile, with snaps of a sample site (never the real screen).
+
 ## 1.1.1 — 16 November 2026
 
 A shorter sign-up window, and "Published by SCAFFApps" at the end of Settings.
