@@ -5,6 +5,7 @@ const {
 const crypto = require('crypto');
 const { spawn, execFile } = require('child_process');
 const path = require('path');
+const registration = require('./registration');
 const fs = require('fs');
 const { pathToFileURL } = require('url');
 
@@ -1207,8 +1208,12 @@ function registerShortcuts() {
 }
 
 if (app.hasSingleInstanceLock()) {
-  app.whenReady().then(() => {
+  app.whenReady().then(async () => {
     app.setAppUserModelId('com.scaffapps.smartsnap');
+    // the user's name and e-mail, asked once for every SCAFFApps app (registration.js); required, even when started hidden
+    const who = await registration.ensure({ appId: 'smart-snap', appName: 'Smart Snap', version: app.getVersion(),
+      icon: ICON, theme: loadSettings().appTheme });
+    if (!who) { app.quit(); return; }
     startHelper();
     buildTray();
     registerShortcuts();

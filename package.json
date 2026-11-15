@@ -24,6 +24,8 @@
     "copyright": "Copyright © 2026 SCAFFApps",
     "files": [
       "main.js",
+      "registration.js",
+      "registration-preload.js",
       "preload.js",
       "overlay-preload.js",
       "windows.ps1",
