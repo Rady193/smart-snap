@@ -25,6 +25,7 @@
     "files": [
       "main.js",
       "registration.js",
+      "releases.js",
       "registration-preload.js",
       "preload.js",
       "overlay-preload.js",

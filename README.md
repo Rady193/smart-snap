@@ -111,7 +111,7 @@ After it is created, choose **Open** or **Show in folder**. Reports are saved in
 
 ## Updates
 
-Smart Snap asks GitHub for a newer version a few seconds after it starts and once a day while it runs. Nothing is downloaded until you choose to.
+Smart Snap asks the SCAFFApps website (GitHub if the website does not answer) for a newer version a few seconds after it starts and once a day while it runs. Nothing is downloaded until you choose to.
 
 - When a new version is out, a message says so once, and the **Settings** button (the sliders icon) carries a gold dot. The SCAFFApps Suite shows the same and can install it.
 - **Settings → Updates** shows what is new and offers **Update now**. **Check for updates** there (or in the tray menu) asks straight away.
