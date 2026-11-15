@@ -115,7 +115,8 @@ Smart Snap asks GitHub for a newer version a few seconds after it starts and onc
 - **Settings → Updates** shows what is new and offers **Update now**. **Check for updates** there (or in the tray menu) asks straight away.
 - The download is checked against the SHA-256 checksum published with the release before it is used. If it does not match, it is not installed.
 - **Installer copy:** Windows asks for permission, then Smart Snap closes, installs the new version and opens again.
-- **Portable copy:** the new version is saved as its own file beside the old one and opened in its place. Delete the old file once you no longer need it.
+- **Portable copy:** the new version is saved as its own file beside the old one (its name carries the new version number) and opened in its place. Once the old version has closed, the new one deletes the old file. Shortcuts or a desktop link pointing at the old file need to be pointed at the new one.
+- **Installer copy** also removes the downloaded installer once the update is done.
 - Settings and snaps waiting for a report are kept.
 - Turn off **Check for updates automatically** in Settings to stop the automatic checks. Only the version number is asked for: nothing about you or your snaps is sent.
 

@@ -287,7 +287,7 @@ const whenText = (t) => new Date(t).toLocaleString([], { dateStyle: 'medium', ti
 
 const UPDATE_HOW = {
   installed: 'Windows asks for permission, then Smart Snap closes, installs the new version and opens again. Your settings and snaps are kept.',
-  portable: 'The new version is saved as its own file beside this one and opened in its place. This file is kept; delete it once you no longer need it. Your settings and snaps are kept.',
+  portable: 'The new version is saved as its own file beside this one and opened in its place; this old file is then deleted. Your settings and snaps are kept.',
 };
 const UPDATE_MANUAL = {
   source: 'This copy runs from source code, so it cannot update itself. Download the new version from the release page.',

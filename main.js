@@ -1020,11 +1020,21 @@ function runInstaller(file) {
 }
 
 // A portable copy cannot replace itself while it runs: the new file is saved
-// beside it and started instead.
+// beside it and started instead, and told which file it replaces so it can
+// delete it once this copy has closed. This copy first lets go of the "one
+// copy at a time" lock and the shortcuts, so the new one can take them.
 function runPortable(file) {
   return new Promise((resolve, reject) => {
-    const child = spawn(file, ['--updated'], { detached: true, stdio: 'ignore' });
-    child.once('error', () => reject(new Error(`The new version could not be started. It is saved at ${file}.`)));
+    app.releaseSingleInstanceLock();
+    globalShortcut.unregisterAll();
+    const args = ['--updated'];
+    if (process.env.PORTABLE_EXECUTABLE_FILE) args.push(`--replaces=${process.env.PORTABLE_EXECUTABLE_FILE}`);
+    const child = spawn(file, args, { detached: true, stdio: 'ignore' });
+    child.once('error', () => {
+      app.requestSingleInstanceLock();
+      registerShortcuts();
+      reject(new Error(`The new version could not be started. It is saved at ${file}.`));
+    });
     child.once('spawn', () => { child.unref(); resolve(); });
   });
 }
@@ -1066,6 +1076,29 @@ async function installUpdate() {
   // Give the interface a moment to say what is happening, then make way.
   setTimeout(() => app.quit(), 1500);
   return updateStatus();
+}
+
+// After an update, what the old version left behind is removed: the old
+// portable file, or the downloaded installer. The old copy may still be
+// closing, so this is tried for a while.
+function cleanUpAfterUpdate() {
+  if (!JUST_UPDATED) return;
+  const targets = [];
+  const arg = process.argv.find((a) => a.startsWith('--replaces='));
+  const old = arg ? path.resolve(arg.slice('--replaces='.length)) : '';
+  const self = process.env.PORTABLE_EXECUTABLE_FILE ? path.resolve(process.env.PORTABLE_EXECUTABLE_FILE) : '';
+  // Only ever an older Smart Snap portable file, never this one.
+  if (old && old.toLowerCase() !== self.toLowerCase() && UPDATE_FILES.portable.test(path.basename(old))) targets.push(old);
+  if (installKind() === 'installed') targets.push(path.join(app.getPath('temp'), 'Smart Snap update'));
+  let tries = 0;
+  const attempt = () => {
+    for (let i = targets.length - 1; i >= 0; i--) {
+      try { fs.rmSync(targets[i], { recursive: true, force: true }); } catch { continue; }
+      if (!fs.existsSync(targets[i])) targets.splice(i, 1);
+    }
+    if (targets.length && ++tries < 30) setTimeout(attempt, 2000);
+  };
+  setTimeout(attempt, 1500);
 }
 
 ipcMain.handle('update-status', () => updateStatus());
@@ -1164,6 +1197,7 @@ function buildTray() {
 
 let shortcutProblems = [];
 function registerShortcuts() {
+  globalShortcut.unregisterAll();
   shortcutProblems = [];
   for (const [mode, keys] of Object.entries(SHORTCUTS)) {
     let ok = false;
@@ -1180,6 +1214,9 @@ if (app.hasSingleInstanceLock()) {
     registerShortcuts();
     createMain();
     scheduleUpdateChecks();
+    cleanUpAfterUpdate();
+    // Started by an update: the old copy may hold the shortcuts for a moment.
+    if (JUST_UPDATED && shortcutProblems.length) setTimeout(registerShortcuts, 4000);
   });
 }
 
