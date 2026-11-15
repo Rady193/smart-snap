@@ -187,7 +187,7 @@ npm run dist
 | `app/index.html`, `app/style.css`, `app/renderer.js` | The app window. |
 | `app/overlay.html` | The frozen, dimmed screen on which an area is chosen. |
 | `app/theme-early.js` | Applies the saved light or dark appearance before the window is first drawn. |
-| `handbook/` | `handbook.html`, its pictures, and `build-handbook.js`, which prints it to `Smart Snap Handbook.pdf`: `node_modules\electron\dist\electron.exe handbookbuild-handbook.js`. |
+| `handbook/` | `handbook.html`, its pictures, and `build-handbook.js`, which prints it to `Smart Snap Handbook.pdf`: `node_modules\electron\dist\electron.exe handbook\build-handbook.js`. |
 | `build/` | Icon files and the script that draws them, the packaging hook, and `installer.nsh`, the installer page that asks for the output folder. |
 
 ## Licence
