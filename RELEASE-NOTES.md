@@ -1,5 +1,35 @@
 # Release notes
 
+## 1.0.2 — 15 November 2026
+
+A new icon in the SCAFFApps colours. Nothing else has changed.
+
+### Downloads
+
+| File | Size | SHA-256 |
+|---|---|---|
+| `Smart-Snap-Setup-1.0.2.exe` | 78.0 MB | `2A493100340415BBA3784E72488DA338598BFEA2B36ECD7F0C1AE8F0595CC9B5` |
+| `Smart-Snap-1.0.2-portable.exe` | 77.7 MB | `6B6823B31714BFF1DF0B8CC9089FFDB53D4CF7406CAC6F3788D9D56268934621` |
+| `Smart-Snap-Handbook-1.0.2.pdf` | 2.0 MB | `33807AA7D67C254780BD88EED6145B7536133E57DCC07BA744744F73CD9D458A` |
+
+### Changed
+
+- **New icon.** The same picture, a snap in front of its report page, now in the SCAFFApps colours: a purple tile with cream and gold, like Instant Share and Multi Screens; the red marker is now gold. It shows on the window, the tray, the taskbar, the Start menu and desktop shortcuts, the installer and the PDF report.
+- The handbook shows the new icon on its cover and in its pictures.
+
+### Tested
+
+- The installer, the portable file and the program inside them carry the new icon (read back from the built files).
+- The portable file started with a fresh profile and showed the new icon in its window and on the "Take a snap" page.
+
+### Not tested
+
+- Installing with the installer, and updating to this version from 1.0.1 in Settings.
+
+### Updating from 1.0.1
+
+Settings > Updates offers this version, and the daily check announces it. A shortcut pinned to the taskbar may keep the old picture until Windows refreshes its icons; unpinning it and pinning it again shows the new one.
+
 ## 1.0.1 — 15 November 2026
 
 A handbook, and portable updates that tidy up after themselves.
