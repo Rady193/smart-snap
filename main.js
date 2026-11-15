@@ -24,7 +24,7 @@ const TITLE_BAR_HEIGHT = 34;
 // Must match --surface / --text in app/style.css.
 const TITLE_BAR = {
   dark: { color: '#191a1b', symbolColor: '#cccccc' },
-  light: { color: '#ffffff', symbolColor: '#171a21' },
+  light: { color: '#ffffff', symbolColor: '#17141c' },
 };
 
 const SHORTCUTS = {
@@ -558,37 +558,37 @@ function reportHtml(list, opts) {
     ? fmt(first) : `${fmt(first)} – ${new Date(first).toDateString() === new Date(last).toDateString() ? new Date(last).toLocaleTimeString([], { timeStyle: 'short' }) : fmt(last)}`;
   return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(opts.title)}</title><style>
   * { box-sizing: border-box; }
-  body { margin: 0; color: #171a21; font: 10.5pt/1.45 "Segoe UI", system-ui, sans-serif; }
-  a { color: #3f4fd8; text-decoration: none; }
+  body { margin: 0; color: #17141c; font: 10.5pt/1.45 "Segoe UI", system-ui, sans-serif; }
+  a { color: #5b2c83; text-decoration: none; }
   header { margin-bottom: 6mm; }
-  .brand { display: flex; align-items: center; gap: 2mm; margin-bottom: 4mm; color: #667085; font-size: 9pt; font-weight: 600; letter-spacing: .2pt; }
+  .brand { display: flex; align-items: center; gap: 2mm; margin-bottom: 4mm; color: #6a6175; font-size: 9pt; font-weight: 600; letter-spacing: .2pt; }
   .brand img { width: 5.5mm; height: 5.5mm; }
   h1 { margin: 0 0 3mm; font-size: 20pt; letter-spacing: -.2pt; overflow-wrap: anywhere; }
   .cards { display: flex; gap: 3mm; }
-  .cards div { flex: 1; min-width: 0; padding: 2.4mm 3.2mm; background: #f4f6fb; border: .25mm solid #e3e7f0; border-radius: 2.5mm; font-size: 10.5pt; font-weight: 600; overflow-wrap: anywhere; }
+  .cards div { flex: 1; min-width: 0; padding: 2.4mm 3.2mm; background: #f7f4ee; border: .25mm solid #e7e1d5; border-radius: 2.5mm; font-size: 10.5pt; font-weight: 600; overflow-wrap: anywhere; }
   .cards div.wide { flex: 2; }
-  .cards b { display: block; margin-bottom: .8mm; color: #667085; font-size: 7.5pt; font-weight: 600; letter-spacing: .4pt; text-transform: uppercase; }
+  .cards b { display: block; margin-bottom: .8mm; color: #6a6175; font-size: 7.5pt; font-weight: 600; letter-spacing: .4pt; text-transform: uppercase; }
   table.sum { width: 100%; margin-top: 4mm; border-collapse: collapse; font-size: 9pt; }
-  .sum th, .sum td { padding: 1.3mm 2mm; text-align: left; vertical-align: top; border-bottom: .2mm solid #dfe2e9; }
-  .sum th { color: #667085; font-weight: 600; }
-  .sum td.n { width: 8mm; color: #667085; }
+  .sum th, .sum td { padding: 1.3mm 2mm; text-align: left; vertical-align: top; border-bottom: .2mm solid #e9dfca; }
+  .sum th { color: #6a6175; font-weight: 600; }
+  .sum td.n { width: 8mm; color: #6a6175; }
   .sum td.where { overflow-wrap: anywhere; word-break: break-word; }
-  .snap { margin-bottom: 6mm; padding: 5mm; border: .3mm solid #e3e7f0; border-radius: 3mm; break-inside: avoid; }
+  .snap { margin-bottom: 6mm; padding: 5mm; border: .3mm solid #e7e1d5; border-radius: 3mm; break-inside: avoid; }
   .head { display: flex; align-items: center; gap: 2.5mm; margin-bottom: 3mm; }
-  .num { flex: none; display: inline-grid; place-items: center; width: 7mm; height: 7mm; color: #fff; background: #4a6cf5; border-radius: 50%; font-size: 10pt; font-weight: 700; }
+  .num { flex: none; display: inline-grid; place-items: center; width: 7mm; height: 7mm; color: #fff; background: #5b2c83; border-radius: 50%; font-size: 10pt; font-weight: 700; }
   .appicon { flex: none; width: 7mm; height: 7mm; }
   .who { min-width: 0; display: flex; flex-direction: column; }
   .who b { font-size: 12pt; }
-  .who span { color: #667085; font-size: 9pt; overflow-wrap: anywhere; }
+  .who span { color: #6a6175; font-size: 9pt; overflow-wrap: anywhere; }
   .text { margin: 0 0 4mm; padding: 3mm 3.5mm; background: #fff7f7; border: .25mm solid #f3d4d5; border-left: 1.1mm solid #e5484d; border-radius: 2mm; font-size: 11pt; overflow-wrap: anywhere; }
-  .img { position: relative; overflow: hidden; border: .25mm solid #c9cdd8; border-radius: 1.5mm; background: #f4f5f8; }
+  .img { position: relative; overflow: hidden; border: .25mm solid #d6c8a9; border-radius: 1.5mm; background: #f7f1e4; }
   .img img { position: absolute; left: 0; top: 0; display: block; }
   .shot { margin: 0 auto; }
   .facts { display: flex; gap: 5mm; align-items: flex-start; margin-top: 4mm; }
   .detail { flex: none; }
-  .cap { margin: 1.2mm 0 0; color: #667085; font-size: 8pt; }
+  .cap { margin: 1.2mm 0 0; color: #6a6175; font-size: 8pt; }
   table.meta { flex: 1; min-width: 0; border-collapse: collapse; font-size: 9pt; }
-  .meta th { width: 24mm; padding: 1mm 2mm 1mm 0; color: #667085; font-weight: 600; text-align: left; vertical-align: top; }
+  .meta th { width: 24mm; padding: 1mm 2mm 1mm 0; color: #6a6175; font-weight: 600; text-align: left; vertical-align: top; }
   .meta td { padding: 1mm 0; overflow-wrap: anywhere; word-break: break-word; }
   .mark { position: absolute; }
   .mark.area { border: .7mm solid #e5484d; border-radius: 1mm; background: rgba(229, 72, 77, .10); }
