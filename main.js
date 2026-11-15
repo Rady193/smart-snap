@@ -565,15 +565,15 @@ function reportHtml(list, opts) {
   .brand img { width: 5.5mm; height: 5.5mm; }
   h1 { margin: 0 0 3mm; font-size: 20pt; letter-spacing: -.2pt; overflow-wrap: anywhere; }
   .cards { display: flex; gap: 3mm; }
-  .cards div { flex: 1; min-width: 0; padding: 2.4mm 3.2mm; background: #f7f4ee; border: .25mm solid #e7e1d5; border-radius: 2.5mm; font-size: 10.5pt; font-weight: 600; overflow-wrap: anywhere; }
+  .cards div { flex: 1; min-width: 0; padding: 2.4mm 3.2mm; background: #f6f5f8; border: .25mm solid #e7e4ec; border-radius: 2.5mm; font-size: 10.5pt; font-weight: 600; overflow-wrap: anywhere; }
   .cards div.wide { flex: 2; }
   .cards b { display: block; margin-bottom: .8mm; color: #6a6175; font-size: 7.5pt; font-weight: 600; letter-spacing: .4pt; text-transform: uppercase; }
   table.sum { width: 100%; margin-top: 4mm; border-collapse: collapse; font-size: 9pt; }
-  .sum th, .sum td { padding: 1.3mm 2mm; text-align: left; vertical-align: top; border-bottom: .2mm solid #e9dfca; }
+  .sum th, .sum td { padding: 1.3mm 2mm; text-align: left; vertical-align: top; border-bottom: .2mm solid #e7e4ec; }
   .sum th { color: #6a6175; font-weight: 600; }
   .sum td.n { width: 8mm; color: #6a6175; }
   .sum td.where { overflow-wrap: anywhere; word-break: break-word; }
-  .snap { margin-bottom: 6mm; padding: 5mm; border: .3mm solid #e7e1d5; border-radius: 3mm; break-inside: avoid; }
+  .snap { margin-bottom: 6mm; padding: 5mm; border: .3mm solid #e7e4ec; border-radius: 3mm; break-inside: avoid; }
   .head { display: flex; align-items: center; gap: 2.5mm; margin-bottom: 3mm; }
   .num { flex: none; display: inline-grid; place-items: center; width: 7mm; height: 7mm; color: #fff; background: #5b2c83; border-radius: 50%; font-size: 10pt; font-weight: 700; }
   .appicon { flex: none; width: 7mm; height: 7mm; }
@@ -581,7 +581,7 @@ function reportHtml(list, opts) {
   .who b { font-size: 12pt; }
   .who span { color: #6a6175; font-size: 9pt; overflow-wrap: anywhere; }
   .text { margin: 0 0 4mm; padding: 3mm 3.5mm; background: #fff7f7; border: .25mm solid #f3d4d5; border-left: 1.1mm solid #e5484d; border-radius: 2mm; font-size: 11pt; overflow-wrap: anywhere; }
-  .img { position: relative; overflow: hidden; border: .25mm solid #d6c8a9; border-radius: 1.5mm; background: #f7f1e4; }
+  .img { position: relative; overflow: hidden; border: .25mm solid #d4d0dc; border-radius: 1.5mm; background: #f6f5f8; }
   .img img { position: absolute; left: 0; top: 0; display: block; }
   .shot { margin: 0 auto; }
   .facts { display: flex; gap: 5mm; align-items: flex-start; margin-top: 4mm; }
