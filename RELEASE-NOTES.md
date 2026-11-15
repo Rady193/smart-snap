@@ -1,5 +1,37 @@
 # Release notes
 
+## 1.1.0 — 16 November 2026
+
+Installed, not portable, in the SCAFFApps folder; the SCAFFApps colours; your name and e-mail asked once.
+
+### Downloads
+
+| File | Size | SHA-256 |
+|---|---|---|
+| `Smart-Snap-Setup-1.1.0.exe` | 78.0 MB | `A59D0DC80BEB5626608A5B80391A6E51543827D3FD7F9146AC1CC0598940790A` |
+
+### Changed
+
+- **Installed only.** One installer, no portable file. New installs go to `C:\Program Files\SCAFFApps\Smart Snap`, with the Start menu shortcut in a **SCAFFApps** folder. A copy in `C:\Program Files\Smart Snap` moves there when it updates; the old folder is removed.
+- **The SCAFFApps colours.** No more blue: buttons and switches in SCAFFApps purple, highlights and the update dot in gold, the area being snapped outlined in gold. The light appearance is white, with cream only behind the snap. The PDF report's links and numbers are purple.
+- **Your name and e-mail, once.** The first SCAFFApps app to start on a Windows account asks for them, even when it starts hidden with Windows; the others (the SCAFFApps Suite, Multi Screens, Instant Share) do not ask again. They are sent to SCAFFApps (`www.scaffapps.com`) with the app's name and version, the Windows version and a random number made for the Windows account. Nothing else is sent, and nothing you snap.
+- **The SCAFFApps Suite** installs, opens and updates Smart Snap.
+
+### Updating from 1.0
+
+- **Installed copy:** Settings > Updates > **Update now**. Windows asks for permission; the new version is installed in `C:\Program Files\SCAFFApps\Smart Snap` and opens.
+- **Portable copy:** there is no 1.1.0 portable file, so it offers only the release page. Run the installer once, then delete the portable file.
+
+### Tested
+
+- Installed without pages, as Update now runs it: in `C:\Program Files\SCAFFApps\Smart Snap`, Start menu and desktop shortcuts, Windows lists 1.1.0. Microsoft Defender finds nothing in the installer or the program.
+- From the source code with a fresh profile, after Multi Screens had registered: Smart Snap did not ask again and sent its own registration.
+- The dark and light appearances, looked over for any blue left.
+
+### Not tested
+
+- **Update now** from an installed 1.0 copy through Windows' permission prompt, and the move from `C:\Program Files\Smart Snap` (the same steps as Multi Screens 1.8.0, tested there).
+
 ## 1.0.2 — 15 November 2026
 
 A new icon in the SCAFFApps colours. Nothing else has changed.
