@@ -269,8 +269,8 @@ dialog table.keys { margin: 0; }
 
 /* ---- Updates ---------------------------------------------------------------- */
 #settings-btn { position: relative; }
-#settings-btn.has-update::after { content: ""; position: absolute; top: 5px; right: 5px; width: 8px; height: 8px; border-radius: 50%; background: #c74e39; box-shadow: 0 0 0 2px var(--surface); }
-:root[data-theme="light"] #settings-btn.has-update::after { background: var(--danger); }
+#settings-btn.has-update::after { content: ""; position: absolute; top: 5px; right: 5px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px var(--surface); }
+:root[data-theme="light"] #settings-btn.has-update::after { background: var(--accent); }
 dialog { max-height: 90vh; }
 dialog form { max-height: 90vh; overflow-y: auto; }
 .update-box { padding-top: 12px; border-top: 1px solid var(--line); }

@@ -2,7 +2,7 @@
 
 Smart Snap takes screenshots that remember where they came from. Each snap records the application it was taken from, the window title and, for web browsers, the address of the page. Add a comment, mark a spot, and turn all your snaps into one PDF report.
 
-Version 1.0.2 · Windows 10 and 11 (64-bit) · Published by SCAFFApps
+Version 1.1.0 · Windows 10 and 11 (64-bit) · Published by SCAFFApps
 
 The **[handbook](Smart%20Snap%20Handbook.pdf)** explains everything, with pictures.
 
@@ -24,23 +24,23 @@ The **[handbook](Smart%20Snap%20Handbook.pdf)** explains everything, with pictur
 
 ## Install
 
-Download from the [Releases page](https://github.com/Rady193/smart-snap/releases/latest). Two files are offered; use whichever suits you.
+Download `Smart-Snap-Setup-1.1.0.exe` from the [Releases page](https://github.com/Rady193/smart-snap/releases/latest) and run it, or install it from the **SCAFFApps Suite**. It installs for everyone on the computer, in `C:\Program Files\SCAFFApps\Smart Snap` unless you choose another folder, so Windows asks for administrator permission once. It adds a desktop shortcut and a Start menu shortcut in the **SCAFFApps** folder, and can be removed from Windows Settings. A copy installed by an earlier version in `C:\Program Files\Smart Snap` moves to the SCAFFApps folder when it updates.
 
-| File | What it is |
-|---|---|
-| `Smart-Snap-Setup-1.0.2.exe` | Installer. Installs for everyone on the computer, in `C:\Program Files\Smart Snap` unless you choose another folder, so Windows asks for administrator permission once. Adds Start menu and desktop shortcuts, and can be removed from Windows Settings. |
-| `Smart-Snap-1.0.2-portable.exe` | Single file. Nothing is installed and no administrator permission is needed. |
+Since 1.1.0 Smart Snap is installed, not portable. A portable copy from before cannot update itself to it: install it with the installer once, then delete the portable file.
 
-The app is not code-signed, so the first time you run either file Windows SmartScreen may show "Windows protected your PC". Choose **More info**, then **Run anyway**.
+The app is not code-signed, so the first time you run the installer Windows SmartScreen may show "Windows protected your PC". Choose **More info**, then **Run anyway**.
 
 ### Output folder
 
 Everything the app produces goes into one folder that you choose:
 
-- **Installer:** a page titled "Output folder" asks where to save, after you pick the install location. It suggests `Documents\Smart Snap`.
-- **Portable file:** the app asks once, the first time it starts.
+A page of the installer titled "Output folder" asks where to save, after you pick the install location. It suggests `Documents\Smart Snap`. (Installed from the SCAFFApps Suite, without the installer's pages, the app asks once, the first time it starts.)
 
 Inside that folder the app keeps two subfolders: `Screenshots` (pictures saved as PNG) and `Reports` (PDF reports). To change the folder, open **Settings** (the sliders icon) and choose **Change…**.
+
+### The first start
+
+The first SCAFFApps app to start on a Windows account asks for your **name** and **e-mail address**, once. Both are required; closing the window without them closes the app. The other SCAFFApps apps on that account (the SCAFFApps Suite, Multi Screens, Instant Share) use the same details and do not ask again. They are sent to SCAFFApps (`www.scaffapps.com`) with the app's name and version, the Windows version and a random number made for your Windows account, so SCAFFApps knows who uses its apps. Nothing else about you or the computer is sent, and nothing you snap.
 
 ## Quick start
 
@@ -113,12 +113,10 @@ After it is created, choose **Open** or **Show in folder**. Reports are saved in
 
 Smart Snap asks GitHub for a newer version a few seconds after it starts and once a day while it runs. Nothing is downloaded until you choose to.
 
-- When a new version is out, a message says so once, and the **Settings** button (the sliders icon) carries a red dot.
+- When a new version is out, a message says so once, and the **Settings** button (the sliders icon) carries a gold dot. The SCAFFApps Suite shows the same and can install it.
 - **Settings → Updates** shows what is new and offers **Update now**. **Check for updates** there (or in the tray menu) asks straight away.
 - The download is checked against the SHA-256 checksum published with the release before it is used. If it does not match, it is not installed.
-- **Installer copy:** Windows asks for permission, then Smart Snap closes, installs the new version and opens again.
-- **Portable copy:** the new version is saved as its own file beside the old one (its name carries the new version number) and opened in its place. Once the old version has closed, the new one deletes the old file. Shortcuts or a desktop link pointing at the old file need to be pointed at the new one.
-- **Installer copy** also removes the downloaded installer once the update is done.
+- Windows asks for permission, then Smart Snap closes, installs the new version (in `C:\Program Files\SCAFFApps\Smart Snap`, or the folder you chose) and opens again. The downloaded installer is removed once the update is done.
 - Settings and snaps waiting for a report are kept.
 - Turn off **Check for updates automatically** in Settings to stop the automatic checks. Only the version number is asked for: nothing about you or your snaps is sent.
 
@@ -144,6 +142,8 @@ If another program already uses one of the shortcuts, Settings says so; use the 
 | PDF reports | `Reports` in your output folder |
 | Snaps waiting for a report, with their pictures | `%APPDATA%\Smart Snap\snaps` |
 | Settings, including the output folder | `%APPDATA%\Smart Snap\settings.json` |
+| The program | `C:\Program Files\SCAFFApps\Smart Snap` (or the folder you chose) |
+| Your registration (name and e-mail, shared by every SCAFFApps app) | `%APPDATA%\SCAFFApps\registration.json` |
 
 Deleting `%APPDATA%\Smart Snap` resets the app and deletes snaps not yet reported. Reports already created are not affected.
 
@@ -165,7 +165,7 @@ npm install
 npm start
 ```
 
-To produce the installer and the portable file in the `release` folder:
+To produce the installer in the `release` folder:
 
 ```bash
 npm run dist
@@ -183,12 +183,13 @@ npm run dist
 | `main.js` | Tray, shortcuts, taking pictures of the screens, the area selection windows, keeping the snaps, and building the PDF report. |
 | `windows.ps1` | Runs in the background for the app's lifetime. Lists the windows on screen and, for one window, names its application and reads the address from a browser's address bar (Windows UI Automation). |
 | `preload.js` | The fixed set of functions the app window may call in `main.js`. |
+| `registration.js`, `registration-preload.js`, `app/registration.html` | The name and e-mail registration, the same files in every SCAFFApps Electron app. |
 | `overlay-preload.js` | The same for the area selection windows. |
 | `app/index.html`, `app/style.css`, `app/renderer.js` | The app window. |
 | `app/overlay.html` | The frozen, dimmed screen on which an area is chosen. |
 | `app/theme-early.js` | Applies the saved light or dark appearance before the window is first drawn. |
 | `handbook/` | `handbook.html`, its pictures, and `build-handbook.js`, which prints it to `Smart Snap Handbook.pdf`: `node_modules\electron\dist\electron.exe handbook\build-handbook.js`. |
-| `build/` | Icon files and the script that draws them, the packaging hook, and `installer.nsh`, the installer page that asks for the output folder. |
+| `build/` | Icon files and the script that draws them, the packaging hook, and `installer.nsh`, the installer page that asks for the output folder and moves an install from the old folder. |
 
 ## Licence
 

@@ -1,7 +1,7 @@
 {
   "name": "smart-snap",
   "productName": "Smart Snap",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "Screenshots that remember where they came from, collected into a PDF report",
   "author": "SCAFFApps",
   "license": "SEE LICENSE IN LICENSE",
