@@ -1,334 +1,473 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-GB">
 <head>
 <meta charset="utf-8">
 <title>Smart Snap Handbook</title>
-<style>
-  * { box-sizing: border-box; }
-  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  body { margin: 0; color: #1b1f27; font: 10.5pt/1.5 "Segoe UI", system-ui, sans-serif; }
-  h1, h2, h3 { line-height: 1.2; }
-  h2 { margin: 0 0 4mm; padding-bottom: 2.5mm; font-size: 19pt; letter-spacing: -.2pt; border-bottom: .6mm solid #4a6cf5; break-after: avoid; }
-  h3 { margin: 7mm 0 2mm; font-size: 12.5pt; break-after: avoid; }
-  p { margin: 0 0 3mm; }
-  ul, ol { margin: 0 0 3mm; padding-left: 5.5mm; }
-  li { margin-bottom: 1.2mm; }
-  section { break-before: page; }
-  strong { font-weight: 650; }
-  .lead { font-size: 11.5pt; color: #3a4252; }
-  .muted { color: #667085; }
-
-  .cover { height: 247mm; display: flex; flex-direction: column; justify-content: center; }
-  .cover img { width: 30mm; height: 30mm; margin-bottom: 9mm; }
-  .cover h1 { margin: 0; font-size: 40pt; letter-spacing: -.8pt; }
-  .cover .sub { margin-top: 3mm; font-size: 17pt; color: #4a6cf5; font-weight: 600; }
-  .cover .line { width: 26mm; height: 1.2mm; margin: 10mm 0; background: #4a6cf5; border-radius: 1mm; }
-  .cover p { max-width: 125mm; font-size: 12pt; color: #3a4252; }
-  .cover .meta { margin-top: auto; color: #667085; font-size: 10pt; }
-
-  .toc { list-style: none; padding: 0; margin: 0; columns: 2; column-gap: 12mm; }
-  .toc li { display: flex; gap: 3mm; padding: 1.7mm 0; border-bottom: .2mm solid #e3e7f0; break-inside: avoid; margin: 0; }
-  .toc b { width: 7mm; color: #4a6cf5; }
-
-  table { width: 100%; margin: 2mm 0 4mm; border-collapse: collapse; font-size: 9.6pt; break-inside: avoid; }
-  th, td { padding: 1.8mm 2.4mm; text-align: left; vertical-align: top; border-bottom: .2mm solid #e3e7f0; }
-  th { color: #667085; font-size: 8.6pt; font-weight: 650; letter-spacing: .3pt; text-transform: uppercase; background: #f6f8fc; }
-  td:first-child { white-space: nowrap; font-weight: 600; }
-  table.wrap td:first-child { white-space: normal; }
-
-  figure { margin: 3mm 0 5mm; break-inside: avoid; }
-  figure img { display: block; width: 100%; border: .3mm solid #d5dae6; border-radius: 2mm; }
-  figure.narrow img { width: 70%; margin: 0 auto; }
-  figure.main img { width: 88%; margin: 0 auto; }
-  figure.small img { width: 48%; margin: 0 auto; }
-  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; }
-  .pair figure { margin: 2mm 0 4mm; }
-  figcaption { margin-top: 1.6mm; color: #667085; font-size: 8.8pt; text-align: center; }
-  .pages { display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; width: 92%; margin: 0 auto; }
-  .pages-page { break-before: page; }
-  .pages img { box-shadow: 0 1mm 3mm rgba(20, 28, 50, .12); }
-
-  .tip, .warn { margin: 3mm 0 4mm; padding: 3mm 4mm; border-radius: 2mm; break-inside: avoid; }
-  .tip { background: #f1f5ff; border-left: 1.1mm solid #4a6cf5; }
-  .warn { background: #fff7ed; border-left: 1.1mm solid #e8833a; }
-  .tip b, .warn b { display: block; margin-bottom: .6mm; }
-
-  .steps { counter-reset: step; list-style: none; padding: 0; }
-  .steps li { position: relative; padding-left: 10mm; margin-bottom: 2.6mm; break-inside: avoid; }
-  .steps li::before { counter-increment: step; content: counter(step); position: absolute; left: 0; top: .2mm; width: 6.4mm; height: 6.4mm; display: grid; place-items: center; color: #fff; background: #4a6cf5; border-radius: 50%; font-size: 9pt; font-weight: 700; }
-
-  kbd { padding: .3mm 1.6mm; background: #f1f3f8; border: .25mm solid #cfd5e2; border-bottom-width: .6mm; border-radius: 1.2mm; font: 9pt "Segoe UI", sans-serif; white-space: nowrap; }
-  code { padding: .2mm 1.2mm; background: #f1f3f8; border-radius: 1mm; font: 9.2pt Consolas, monospace; overflow-wrap: anywhere; }
-</style>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..900;1,14..32,300..900&family=JetBrains+Mono:wght@400..800&family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&display=block" rel="stylesheet">
+<link rel="stylesheet" href="brochure.css">
+<link rel="stylesheet" href="handbook.css">
+<!-- The Smart Snap handbook, in the SCAFFApps brochure style. The pictures (img/) are retaken by build_handbook.py from
+     the app itself, with snaps of the sample site in demo/. Page numbers are worked out from the order of the pages. -->
 </head>
 <body>
 
-<div class="cover">
-  <img src="../app/icon.png" alt="">
-  <h1>Smart Snap</h1>
-  <div class="sub">Handbook</div>
-  <div class="line"></div>
-  <p>Screenshots that remember where they came from. Every snap records the application, the window and the web page it was taken from. Add a comment, mark what you mean, and hand over one PDF report.</p>
-  <div class="meta">Version 1.0.2 · Windows 10 and 11 (64-bit) · Published by SCAFFApps</div>
-</div>
-
-<section>
-  <h2>Contents</h2>
-  <ol class="toc">
-    <li><b>1</b> What Smart Snap is</li>
-    <li><b>2</b> Installing and starting</li>
-    <li><b>3</b> The window at a glance</li>
-    <li><b>4</b> Taking a snap</li>
-    <li><b>5</b> What each snap records</li>
-    <li><b>6</b> Working on a snap</li>
-    <li><b>7</b> The PDF report</li>
-    <li><b>8</b> Settings and updates</li>
-    <li><b>9</b> Shortcuts and where files go</li>
-    <li><b>10</b> Limits and troubleshooting</li>
-  </ol>
-
-  <h3 style="margin-top:12mm">1. What Smart Snap is</h3>
-  <p class="lead">Smart Snap is a screenshot tool for people who report what they see on screen: website reviews, software testing, support cases, site records.</p>
-  <p>An ordinary screenshot is just a picture. Weeks later nobody remembers which program it came from or which page was open. Smart Snap keeps that with every picture:</p>
-  <ul>
-    <li><strong>Snap</strong> an area, a window or the whole screen from any program, with one shortcut.</li>
-    <li><strong>Record</strong> the application, its window title and, for web browsers, the page address, automatically.</li>
-    <li><strong>Explain</strong> each snap with a comment and a mark on the spot or area you mean.</li>
-    <li><strong>Report</strong> all snaps in one PDF, with clickable links, ready to send.</li>
-  </ul>
-  <div class="tip"><b>It works the same way as Multi Screens</b>If you use Multi Screens, the notes, marks, review list and PDF report will be familiar. Multi Screens reviews web pages inside its own window; Smart Snap works on anything on your desktop.</div>
-</section>
-
-<section>
-  <h2>2. Installing and starting</h2>
-  <p>Two files are provided on the Releases page of <code>github.com/Rady193/smart-snap</code>. Use whichever suits you.</p>
-  <table class="wrap">
-    <tr><th>File</th><th>What it does</th></tr>
-    <tr><td>Smart-Snap-Setup-1.0.2.exe</td><td>Installer. Installs for everyone on the computer, in <code>C:\Program Files\Smart Snap</code> unless you choose another folder, so Windows asks for administrator permission once. It adds Start menu and desktop shortcuts, and can be removed later from Windows Settings.</td></tr>
-    <tr><td>Smart-Snap-1.0.2-portable.exe</td><td>A single file. Nothing is installed and no administrator permission is needed. Copy it anywhere and double-click it.</td></tr>
-  </table>
-  <p>No other software is needed.</p>
-
-  <div class="warn"><b>"Windows protected your PC"</b>The app is not code-signed, so Windows may show this message the first time you run either file. Choose <strong>More info</strong>, then <strong>Run anyway</strong>.</div>
-
-  <h3>The output folder</h3>
-  <p>Everything Smart Snap saves goes into one folder that you choose:</p>
-  <ul>
-    <li><strong>Installer:</strong> a page titled "Output folder" asks where to save. It suggests <code>Documents\Smart Snap</code>.</li>
-    <li><strong>Portable file:</strong> the app asks once, the first time it starts.</li>
-  </ul>
-  <p>Inside that folder the app keeps two subfolders: <code>Screenshots</code> for pictures saved as PNG, and <code>Reports</code> for PDF reports. The folder button in the top bar opens it.</p>
-
-  <h3>It lives in the tray</h3>
-  <p>Smart Snap puts its icon in the tray, next to the clock. Closing the window does not stop it: it keeps running there so the shortcuts work from any program. Click the tray icon to open the window again; right-click it for the menu, which also has <strong>Quit</strong>.</p>
-  <p>To have Smart Snap ready every day, tick <strong>Start Smart Snap when I sign in to Windows</strong> in Settings. It then starts quietly in the tray.</p>
-
-  <h3>Your first report</h3>
-  <ol class="steps">
-    <li>Go to the program or web page you want to capture.</li>
-    <li>Press <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>S</kbd> and drag over the part you want.</li>
-    <li>Smart Snap opens with the new snap. Type a comment, and click or drag on the picture to mark what you mean.</li>
-    <li>Repeat for as many snaps as you need.</li>
-    <li>Press <strong>Create PDF report</strong>.</li>
-  </ol>
-</section>
-
-<section>
-  <h2>3. The window at a glance</h2>
-  <figure class="main">
-    <img src="img/main-dark.png" alt="The Smart Snap window">
-    <figcaption>The Smart Snap window with three snaps of a website. The first is selected, with an area marked and a comment.</figcaption>
-  </figure>
-
-  <table class="wrap">
-    <tr><th>Part</th><th>What it is for</th></tr>
-    <tr><td>Area, Window, Full screen</td><td>Take a snap. Each button shows its shortcut. See section 4.</td></tr>
-    <tr><td>Delay</td><td>Waits 3, 5 or 10 seconds before the snap, so you can open a menu first.</td></tr>
-    <tr><td>Create PDF report</td><td>Turns the snaps into one report. The red number is how many snaps are waiting.</td></tr>
-    <tr><td>Folder</td><td>Opens the output folder.</td></tr>
-    <tr><td>Sliders</td><td>Settings: output folder, starting with Windows, shortcuts and updates. A red dot means an update is waiting.</td></tr>
-    <tr><td>Sun or moon</td><td>Switches between dark and light.</td></tr>
-    <tr><td>Screenshots list</td><td>Every snap, numbered in report order, with its application, link and comment.</td></tr>
-    <tr><td>The selected snap</td><td>Application, window title and link at the top; the picture; the comment box; and buttons to copy, save, reorder or delete.</td></tr>
-  </table>
-
-</section>
-
-<section>
-  <h2>4. Taking a snap</h2>
-  <table class="wrap">
-    <tr><th>Kind</th><th>Shortcut</th><th>What it takes</th></tr>
-    <tr><td>Area</td><td><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>S</kbd></td><td>Any rectangle you drag, or a window you click.</td></tr>
-    <tr><td>Window</td><td><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>W</kbd></td><td>The window you are using, without its shadow.</td></tr>
-    <tr><td>Full screen</td><td><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>F</kbd></td><td>The whole display the mouse is on.</td></tr>
-  </table>
-  <p>The same three are buttons at the top of the window and items in the tray menu. When you use a button, Smart Snap hides itself first, so it takes the window you were using before, not itself.</p>
-
-  <h3>Choosing an area</h3>
-  <p>The screen freezes and dims, and a short guide appears at the top. As you move the mouse, the window under it is outlined in gold with its name and size.</p>
-  <div class="pair">
-  <figure>
-    <img src="img/overlay-window.png" alt="Choosing an area: a window outlined">
-    <figcaption>Moving the mouse outlines the window under it. Click to take that window.</figcaption>
-  </figure>
-  <figure>
-    <img src="img/overlay-area.png" alt="Choosing an area: dragging a rectangle">
-    <figcaption>Dragging takes a rectangle. Its size in pixels is shown below it.</figcaption>
-  </figure>
+<!-- =============================================================================================== cover -->
+<section class="page cover" id="cover">
+  <div class="grain"></div>
+  <div class="logo-c"><img src="img/app-icon.svg" alt=""></div>
+  <div class="ver">1.1</div>
+  <div class="lbl top"><span>SCAFFApps</span><span>/</span><span>Smart Snap</span><span class="dot">·</span><span>The handbook</span></div>
+  <div class="rule r1"></div>
+  <div class="band"></div><div class="band-foot"></div>
+  <div class="bigword"><div class="w ink">SNAP<em>S</em></div><div class="w lit">SNAP<em>S</em></div><div class="sel"><b></b><b></b><b></b><b></b></div></div>
+  <div class="ruler" aria-hidden="true"></div>
+  <div class="head">
+    <div class="sticker"><h1>Every screenshot.<br><em>Its whole story.</em></h1></div>
+    <p>Snap an area, a window or the whole screen from any program. Each snap remembers the application, the window and the web page it came from.</p>
   </div>
-  <ul>
-    <li><strong>Drag</strong> to take a rectangle.</li>
-    <li><strong>Click</strong> to take the window under the mouse.</li>
-    <li><kbd>Enter</kbd> takes the whole display.</li>
-    <li><kbd>Esc</kbd> or a right-click cancels.</li>
-  </ul>
-  <p>With more than one monitor, every monitor freezes and you can drag on any of them. A window spread across two monitors is cut at the edge of the one that shows most of it.</p>
-  <div class="tip"><b>Menus and pop-ups</b>A menu closes when you press a shortcut. Choose a <strong>Delay</strong> (or <strong>Snap an area in 5 seconds</strong> in the tray menu), then open the menu while Smart Snap waits.</div>
-</section>
-
-<section>
-  <h2>5. What each snap records</h2>
-  <p>At the moment of the snap, Smart Snap asks Windows which window is there and notes the following. It does this by itself; there is nothing to set up.</p>
-  <table class="wrap">
-    <tr><th>Item</th><th>Where it comes from</th></tr>
-    <tr><td>Application</td><td>The program that owns the window, by the name its maker gives it ("Microsoft Edge", "Excel", "Visual Studio Code"), with its version, company and icon. For an area snap, it is the window in the middle of the area.</td></tr>
-    <tr><td>Window</td><td>The window's title, as shown in its title bar or taskbar button. For most programs this names the open document or page.</td></tr>
-    <tr><td>Link</td><td>For web browsers, the address in the address bar. Works with Chrome, Edge, Brave, Opera, Vivaldi, Firefox and similar browsers.</td></tr>
-    <tr><td>Folder</td><td>For File Explorer, the folder being shown.</td></tr>
-    <tr><td>Taken</td><td>Date and time, the kind of snap, the display, and the picture's size in pixels.</td></tr>
-    <tr><td>Program</td><td>Where the program's file is, for telling apart two programs with the same name.</td></tr>
-  </table>
-  <div class="tip"><b>About links</b>Chrome and Edge hide <code>https://</code> in the address bar. Smart Snap puts it back so the link works. Addresses on your own network (<code>localhost</code>, <code>192.168.…</code>) get <code>http://</code>. If a link is wrong or missing, correct it in the snap's <strong>Link</strong> box.</div>
-</section>
-
-<section>
-  <h2>6. Working on a snap</h2>
-  <p>Click a snap in the list to work on it. Everything is saved as you go; there is no Save button.</p>
-  <table class="wrap">
-    <tr><th>To</th><th>Do this</th></tr>
-    <tr><td>Add a comment</td><td>Type in the box under the picture. It appears in the report above the picture.</td></tr>
-    <tr><td>Mark a spot</td><td>Click the picture. A red circle is drawn there.</td></tr>
-    <tr><td>Mark an area</td><td>Drag on the picture. A red box is drawn.</td></tr>
-    <tr><td>Remove the mark</td><td>Choose <strong>Remove mark</strong>. A new mark also replaces the old one.</td></tr>
-    <tr><td>Fix the link</td><td>Type in the <strong>Link</strong> box. Clear it to leave the link out of the report. The button beside it opens the page.</td></tr>
-    <tr><td>Copy the picture</td><td><strong>Copy picture</strong>, or <kbd>Ctrl</kbd> + <kbd>C</kbd> when you are not typing. Paste it into an e-mail or chat.</td></tr>
-    <tr><td>Save the picture</td><td><strong>Save as PNG</strong> puts it in the <code>Screenshots</code> folder, named after the application and time.</td></tr>
-    <tr><td>Change the order</td><td>The up and down arrows move the snap earlier or later in the report.</td></tr>
-    <tr><td>Delete</td><td><strong>Delete</strong> removes the snap. <strong>Clear all</strong> above the list removes every snap after asking.</td></tr>
-  </table>
-  <p>Use <kbd>↑</kbd> and <kbd>↓</kbd> to move through the list.</p>
-  <figure class="narrow">
-    <img src="img/main-light.png" alt="The light appearance">
-    <figcaption>A snap being worked on, in the light appearance. Dark and light use the same colours as Multi Screens and Instant Share.</figcaption>
-  </figure>
-  <p>Snaps are kept until you create a report or delete them, also after closing Smart Snap or restarting the computer. A report can be built up over several days.</p>
-</section>
-
-<section>
-  <h2>7. The PDF report</h2>
-  <p>Press <strong>Create PDF report</strong>. A short form asks for:</p>
-  <figure class="small">
-    <img src="img/report-dialog.png" alt="The Create PDF report form">
-    <figcaption>The report form.</figcaption>
-  </figure>
-  <ul>
-    <li><strong>Title</strong>, printed at the top and used for the file name. Left empty, it is "Screenshot report".</li>
-    <li><strong>Prepared by</strong>, optional. Remembered for next time.</li>
-    <li><strong>Keep the screenshots</strong> after the report is created. Off by default.</li>
-  </ul>
-  <div class="warn"><b>Creating a report clears its snaps</b>Unless you tick Keep, the snaps leave Smart Snap once they are in the PDF, ready for the next job. Open the PDF to check it before you move on: a report cannot be made again once its snaps are gone.</div>
-
-  <h3>What is in it</h3>
-  <p>The report is A4 with numbered pages:</p>
-  <ol>
-    <li><strong>A summary:</strong> title, who prepared it, when the snaps were taken, how many, which applications, and a table of every snap with its application, page or window, and time. Links can be clicked.</li>
-    <li><strong>One section per snap:</strong> the application's icon and name, the window title, your comment, the picture with its mark, a close-up of the marked spot or area, and the details from section 5.</li>
-  </ol>
-  <h3 class="pages-page">An example</h3>
-  <p>A short website review: three snaps of the SCAFFApps site taken in Microsoft Edge, two with comments and marks.</p>
-  <div class="pages">
-    <figure><img src="img/report-page1.png" alt="Report summary page"><figcaption>The summary page.</figcaption></figure>
-    <figure><img src="img/report-page2.png" alt="A snap in the report"><figcaption>A snap, with its mark, close-up and details.</figcaption></figure>
+  <div class="concrete"></div>
+  <div class="shot app"><img src="img/main-dark.png" alt=""></div>
+  <div class="lines">
+    <div><a href="#install"></a><b>Install and start</b><span>One installer, it waits in the tray</span></div>
+    <div><a href="#snap"></a><b>Taking a snap</b><span>An area, a window, the screen</span></div>
+    <div><a href="#record"></a><b>What each snap records</b><span>The app, the window, the link</span></div>
+    <div><a href="#edit"></a><b>Working on a snap</b><span>A comment and a mark</span></div>
+    <div><a href="#report"></a><b>The PDF report</b><span>Every snap in one file</span></div>
+    <div><a href="#updates"></a><b>Settings and updates</b><span>Checked and installed for you</span></div>
   </div>
-  <p>When the report is ready, choose <strong>Open</strong> or <strong>Show in folder</strong>. Reports are saved in the <code>Reports</code> folder.</p>
+  <div class="foot">
+    <img class="lgh" src="img/logo-h.svg" alt="SCAFFApps">
+    <div class="grow"></div>
+    <div class="contact"><div class="ct">Contact us</div><div class="mail">info@scaffapps.com</div></div>
+    <div class="qr"><img src="img/qr.png" alt="QR code for www.scaffapps.com"><i></i><i></i><i></i><i></i></div>
+  </div>
 </section>
 
-<section>
-  <h2>8. Settings and updates</h2>
-  <figure class="small">
-    <img src="img/settings.png" alt="Settings">
-    <figcaption>Settings, with the Updates part at the bottom.</figcaption>
-  </figure>
-  <table class="wrap">
-    <tr><th>Setting</th><th>What it does</th></tr>
-    <tr><td>Output folder</td><td>Where screenshots and reports are saved. <strong>Change…</strong> picks another folder; files already saved stay where they are.</td></tr>
-    <tr><td>Start with Windows</td><td>Starts Smart Snap in the tray when you sign in.</td></tr>
-    <tr><td>Shortcuts</td><td>Lists the three shortcuts. If another program already uses one, it says so here; use the buttons or tray menu for that one.</td></tr>
-    <tr><td>Updates</td><td>The version you have, and new versions. See below.</td></tr>
-  </table>
-
-  <h3>Updates</h3>
-  <p>Smart Snap asks GitHub for a newer version a few seconds after it starts and once a day while it runs. Only the version number is asked for: nothing about you or your snaps is sent, and nothing is downloaded until you choose to.</p>
-  <ul>
-    <li>When a new version is out, a message says so once, and the Settings button carries a red dot.</li>
-    <li>Settings shows what is new and offers <strong>Update now</strong>. <strong>Check for updates</strong> (also in the tray menu) asks straight away.</li>
-    <li>The download is checked against the checksum published with the release. If it does not match, it is not used.</li>
-    <li><strong>Installed copy:</strong> Windows asks for permission, then Smart Snap closes, installs the new version and opens again. The downloaded installer is then removed.</li>
-    <li><strong>Portable copy:</strong> the new version is saved beside the old file, under its new version number, and opened in its place. Once the old version has closed, the new one deletes the old file. A shortcut you made to the old file must be pointed at the new one.</li>
-    <li>Settings and snaps waiting for a report are kept.</li>
-  </ul>
-  <p>Untick <strong>Check for updates automatically</strong> to stop the automatic checks.</p>
+<!-- =============================================================================================== contents and welcome -->
+<section class="page" id="contents">
+  <div class="grain"></div>
+  <div class="pad" style="flex-direction: row; gap: 10mm">
+    <div style="width: 74mm; display: flex; flex-direction: column; gap: 4mm">
+      <div class="kicker">Inside</div>
+      <h1>Contents</h1>
+      <div class="toc">
+        <a href="#install"><span class="n"></span><span><b>Install and start</b><span>The installer · your name, once · the output folder</span></span></a>
+        <a href="#window"><span class="n"></span><span><b>The window at a glance</b><span>The bar · the list · the selected snap</span></span></a>
+        <a href="#snap"><span class="n"></span><span><b>Taking a snap</b><span>Area, window, full screen · choosing an area · menus</span></span></a>
+        <a href="#record"><span class="n"></span><span><b>What each snap records</b><span>The application · the window · the link · the time</span></span></a>
+        <a href="#edit"><span class="n"></span><span><b>Working on a snap</b><span>A comment · a mark · copy, save, order, delete</span></span></a>
+        <a href="#report"><span class="n"></span><span><b>The PDF report</b><span>The form · what the report holds</span></span></a>
+        <a href="#settings"><span class="n"></span><span><b>Settings and the tray</b><span>The output folder · start with Windows · shortcuts · the tray</span></span></a>
+        <a href="#updates"><span class="n"></span><span><b>Updates</b><span>Checked, verified and installed for you</span></span></a>
+        <a href="#keys"><span class="n"></span><span><b>Shortcuts and help</b><span>The keys · what it does not do · if something is not right</span></span></a>
+      </div>
+    </div>
+    <div class="grow" style="display: flex; flex-direction: column; gap: 4.5mm">
+      <div class="kicker">Welcome</div>
+      <h2>A picture is not enough. <em>Keep where it came from.</em></h2>
+      <div class="letter">
+        <p class="first">Smart Snap is a screenshot tool for people who report what they see on screen: website reviews, software testing, support cases, site records.</p>
+        <p>An ordinary screenshot is just a picture. Weeks later nobody remembers which program it came from or which page was open. Smart Snap keeps that with every picture, by itself: the <b>application</b>, its <b>window</b> and, for web browsers, the <b>page address</b>.</p>
+        <p>Snap an area, a window or the whole screen from any program with one shortcut. Explain each snap with a comment and a mark on the spot or area you mean. Then hand over <b>one PDF report</b>, with links that can be clicked.</p>
+        <p><b>It works like Multi Screens.</b> If you use Multi Screens, the notes, marks, list and report will be familiar: Multi Screens reviews web pages in its own window; Smart Snap works on anything on your desktop.</p>
+        <p class="serif" style="font-style: italic; font-size: 11pt; color: var(--purple); margin-top: 3mm">The SCAFFApps team</p>
+      </div>
+      <figure style="margin-top: auto"><div class="shot" style="height: 62mm"><img src="img/main-light.png" alt=""></div>
+        <figcaption><b>The light appearance:</b> the sun or moon button switches it.</figcaption></figure>
+    </div>
+  </div>
+  <div class="folio"><span>Smart Snap handbook · Version 1.1</span><span class="n"></span></div>
 </section>
 
-<section>
-  <h2>9. Shortcuts and where files go</h2>
-  <h3>Keyboard</h3>
-  <table class="wrap">
-    <tr><th>Keys</th><th>Where</th><th>Action</th></tr>
-    <tr><td><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>S</kbd></td><td>Anywhere</td><td>Snap an area or a window</td></tr>
-    <tr><td><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>W</kbd></td><td>Anywhere</td><td>Snap the window in front</td></tr>
-    <tr><td><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>F</kbd></td><td>Anywhere</td><td>Snap the full screen</td></tr>
-    <tr><td><kbd>Esc</kbd> or right-click</td><td>Choosing an area</td><td>Cancel</td></tr>
-    <tr><td><kbd>Enter</kbd></td><td>Choosing an area</td><td>Take the whole display</td></tr>
-    <tr><td><kbd>↑</kbd> <kbd>↓</kbd></td><td>Smart Snap window</td><td>Previous or next snap</td></tr>
-    <tr><td><kbd>Ctrl</kbd> + <kbd>C</kbd></td><td>Smart Snap window</td><td>Copy the picture</td></tr>
-  </table>
-
-  <h3>Files</h3>
-  <table class="wrap">
-    <tr><th>What</th><th>Where</th></tr>
-    <tr><td>Pictures saved as PNG</td><td><code>Screenshots</code> in your output folder</td></tr>
-    <tr><td>PDF reports</td><td><code>Reports</code> in your output folder</td></tr>
-    <tr><td>Snaps waiting for a report</td><td><code>%APPDATA%\Smart Snap\snaps</code></td></tr>
-    <tr><td>Settings</td><td><code>%APPDATA%\Smart Snap\settings.json</code></td></tr>
-  </table>
-  <p>Deleting <code>%APPDATA%\Smart Snap</code> resets the app and deletes snaps not yet reported. Reports already created are not affected.</p>
+<!-- =============================================================================================== install and start -->
+<section class="page" id="install">
+  <div class="tab" style="--c: #5b2c83; --on: #f3f0ea"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 21h16"/></svg></i><b>INSTALL</b></div>
+  <div class="grain"></div>
+  <div class="pad">
+    <div class="hd">
+      <div class="kicker">Chapter 01 · Getting started</div>
+      <h1>Install once. <em>Snap from anywhere.</em></h1>
+      <p class="lede">One installer, for 64-bit Windows 10 and 11. Smart Snap installs for everyone on the computer, with its shortcut in the Start menu's <b>SCAFFApps</b> folder.</p>
+    </div>
+    <ol class="hsteps c4">
+      <li><span><b>Download</b>Smart-Snap-Setup-1.1.x.exe from the Releases page, or install it from the SCAFFApps Suite.</span></li>
+      <li><span><b>Install</b>Windows asks for permission once. A page asks where to save pictures and reports.</span></li>
+      <li><span><b>Your name, once</b>The first SCAFFApps app on a Windows account asks for your name and e-mail. The others do not ask again.</span></li>
+      <li><span><b>A first report</b>Press <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>S</kbd>, drag over a part of the screen, add a comment, and create the PDF.</span></li>
+    </ol>
+    <div class="split n">
+      <figure><div class="shot fit dark-bg"><img src="img/signup.png" alt=""></div>
+        <figcaption><b>The first start:</b> your name and e-mail address, asked once on each Windows account.</figcaption></figure>
+      <div class="stack">
+        <div>
+          <h3 class="sub-h">The output folder</h3>
+          <p class="note-p">Everything Smart Snap saves goes into one folder you choose, <b>Documents\Smart Snap</b> unless you pick another: the installer asks, or the app asks once on its first start when the SCAFFApps Suite installed it. Inside are <b>Screenshots</b>, for pictures saved as PNG, and <b>Reports</b>, for the PDFs. The folder button in the top bar opens it.</p>
+        </div>
+        <div class="gtk">
+          <h3>Good to know</h3>
+          <ul class="ticks">
+            <li><b>"Windows protected your PC"</b> may show the first time, because the installer is not code-signed. Choose <b>More info</b>, then <b>Run anyway</b>.</li>
+            <li><b>Remove it</b> from Windows Settings, Apps, like any program. Your output folder is kept.</li>
+            <li><b>Coming from a portable copy?</b> Run the installer once, then delete the old file.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <figure class="fill"><div class="shot dark-bg"><img src="img/empty.png" alt=""></div>
+      <figcaption><b>Before the first snap:</b> the window lists the three shortcuts. Closing it leaves Smart Snap in the tray.</figcaption></figure>
+  </div>
+  <div class="folio"><span>Smart Snap handbook · Install and start</span><span class="n"></span></div>
 </section>
 
-<section>
-  <h2>10. Limits and troubleshooting</h2>
-  <h3>What it does not do</h3>
-  <ul>
-    <li><strong>Pages are not scrolled.</strong> A snap holds what is on screen, not the whole length of a web page.</li>
-    <li><strong>The link is what the address bar shows.</strong> If you were typing in it at that moment, the typed text is taken instead. A web app opened without an address bar gives no link.</li>
-    <li><strong>Other programs' documents.</strong> For programs other than browsers and File Explorer, the window title is recorded but not the document's file location.</li>
-    <li><strong>Protected content.</strong> Windows shows some video players and private windows as black in every screenshot.</li>
-    <li><strong>Windows only.</strong> Smart Snap relies on Windows to name the window and read the browser's address.</li>
-  </ul>
-
-  <h3>If something is not right</h3>
-  <table class="wrap">
-    <tr><th>What you see</th><th>What to do</th></tr>
-    <tr><td>"Windows protected your PC" on first run</td><td>Choose More info, then Run anyway. The app is not code-signed.</td></tr>
-    <tr><td>A shortcut does nothing</td><td>Check that Smart Snap is in the tray. Settings says if another program holds the shortcut.</td></tr>
-    <tr><td>The wrong application is recorded</td><td>For an area snap, the window in the middle of the area counts. For a window snap, click the window first.</td></tr>
-    <tr><td>No link for a web page</td><td>The browser may be unusual or busy. Type the address into the Link box.</td></tr>
-    <tr><td>The application name or icon is missing</td><td>The program may be running as administrator. The picture is still taken.</td></tr>
-    <tr><td>Old snaps appear in a new report</td><td>Snaps stay until reported or deleted. Delete them first, or use Clear all.</td></tr>
-    <tr><td>You cannot find a picture or report</td><td>Press the folder button in the top bar.</td></tr>
-  </table>
-  <p class="muted" style="margin-top:8mm">Smart Snap 1.0.2, published by SCAFFApps. This handbook describes that version.</p>
+<!-- =============================================================================================== the window -->
+<section class="page" id="window">
+  <div class="tab" style="--c: #141414; --on: #f3f0ea"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><path d="M8 9v11"/></svg></i><b>WINDOW</b></div>
+  <div class="grain"></div>
+  <div class="pad">
+    <div class="hd">
+      <div class="kicker">Chapter 02 · The window at a glance</div>
+      <h1>Your snaps. <em>One at a time.</em></h1>
+      <p class="lede">The bar takes snaps and makes the report; the list on the left holds every snap in report order; the right side is the snap you are working on.</p>
+    </div>
+    <figure class="fill"><div class="shot dark-bg"><img src="img/main-dark.png" alt=""></div>
+      <figcaption><b>Three snaps of a sample site.</b> The first is selected, with an area marked and a comment.</figcaption></figure>
+    <table class="tbl">
+      <tr><th>Part</th><th>What it is for</th></tr>
+      <tr><td>Area, Window, Full screen</td><td>Take a snap. Each button shows its shortcut (next chapter).</td></tr>
+      <tr><td>Delay</td><td>Waits 3, 5 or 10 seconds before the snap, so you can open a menu first.</td></tr>
+      <tr><td>Create PDF report</td><td>Turns the snaps into one report. The number is how many snaps are waiting.</td></tr>
+      <tr><td>Folder · sliders · sun or moon</td><td>The output folder · Settings (a gold dot when an update is waiting) · dark or light.</td></tr>
+      <tr><td>The list</td><td>Every snap, numbered in report order, with its application, link and comment.</td></tr>
+      <tr><td>The selected snap</td><td>The application, window and link at the top; the picture; the comment; copy, save, reorder, delete.</td></tr>
+    </table>
+  </div>
+  <div class="folio"><span>Smart Snap handbook · The window at a glance</span><span class="n"></span></div>
 </section>
 
+<!-- =============================================================================================== taking a snap -->
+<section class="page" id="snap">
+  <div class="tab" style="--c: #f0c33c; --on: #141414"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><rect x="8" y="8" width="8" height="8" rx="1"/></svg></i><b>SNAP</b></div>
+  <div class="grain"></div>
+  <div class="pad">
+    <div class="hd">
+      <div class="kicker">Chapter 03 · Taking a snap</div>
+      <h1>One shortcut. <em>From any program.</em></h1>
+      <p class="lede">The three kinds are shortcuts that work everywhere, buttons in the bar and items in the tray menu. A button hides Smart Snap first, so it takes the window you were using, not itself.</p>
+    </div>
+    <table class="tbl">
+      <tr><th>Kind</th><th>Shortcut</th><th>What it takes</th></tr>
+      <tr><td>Area</td><td><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>S</kbd></td><td>Any rectangle you drag, or a window you click.</td></tr>
+      <tr><td>Window</td><td><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>W</kbd></td><td>The window you are using, without its shadow.</td></tr>
+      <tr><td>Full screen</td><td><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>F</kbd></td><td>The whole display the mouse is on.</td></tr>
+    </table>
+    <figure class="fill"><div class="shot dark-bg"><img src="img/overlay-area.png" alt=""></div>
+      <figcaption><b>Drag</b> for a rectangle: everything else dims, and its size in pixels shows below it. (A sample desktop.)</figcaption></figure>
+    <div class="split">
+      <figure><div class="shot fit dark-bg"><img src="img/overlay-window.png" alt=""></div>
+        <figcaption><b>Or click a window:</b> the one under the mouse is outlined in gold, with its name and size.</figcaption></figure>
+      <ol class="hsteps">
+        <li><span><b>The screen freezes and dims</b>A short guide shows at the top.</span></li>
+        <li><span><b>Drag or click</b>Drag for a rectangle; click for the window under the mouse; <kbd>Enter</kbd> for the whole display.</span></li>
+        <li><span><b>Changed your mind?</b><kbd>Esc</kbd> or a right-click cancels.</span></li>
+      </ol>
+    </div>
+    <div class="gtk gold">
+      <h3>Menus and several monitors</h3>
+      <ul class="ticks">
+        <li><b>A menu</b> closes when you press a shortcut: choose a <b>Delay</b> (or <b>Snap an area in 5 seconds</b> in the tray menu), then open the menu while Smart Snap waits.</li>
+        <li><b>With more than one monitor</b> every monitor freezes, and you can drag on any of them.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="folio"><span>Smart Snap handbook · Taking a snap</span><span class="n"></span></div>
+</section>
+
+<!-- =============================================================================================== what each snap records -->
+<section class="page" id="record">
+  <div class="tab" style="--c: #5b2c83; --on: #f3f0ea"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h3M9 17h6"/></svg></i><b>RECORD</b></div>
+  <div class="grain"></div>
+  <div class="pad">
+    <div class="hd">
+      <div class="kicker">Chapter 04 · What each snap records</div>
+      <h1>Where it came from. <em>By itself.</em></h1>
+      <p class="lede">At the moment of the snap, Smart Snap asks Windows which window is there and notes what follows. There is nothing to set up.</p>
+    </div>
+    <figure><div class="shot fit dark-bg"><img src="img/details.png" alt=""></div>
+      <figcaption><b>At the top of a snap:</b> the application with its icon, the window title, when and how it was taken, and the link.</figcaption></figure>
+    <table class="tbl">
+      <tr><th>Item</th><th>Where it comes from</th></tr>
+      <tr><td>Application</td><td>The program that owns the window, by the name its maker gives it ("Microsoft Edge", "Excel"), with its version, company and icon. For an area snap, the window in the middle of the area.</td></tr>
+      <tr><td>Window</td><td>The window's title, as in its title bar or taskbar button. For most programs it names the open document or page.</td></tr>
+      <tr><td>Link</td><td>For web browsers, the address in the address bar: Chrome, Edge, Brave, Opera, Vivaldi, Firefox and the like.</td></tr>
+      <tr><td>Folder</td><td>For File Explorer, the folder being shown.</td></tr>
+      <tr><td>Taken</td><td>The date and time, the kind of snap, the display, and the picture's size in pixels.</td></tr>
+      <tr><td>Program</td><td>Where the program's file is, to tell apart two programs with the same name.</td></tr>
+    </table>
+    <figure class="fill"><div class="shot"><img src="img/report-details.png" alt=""></div>
+      <figcaption><b>In the report,</b> under each snap: the close-up of the mark, and the details.</figcaption></figure>
+    <div class="gtk gold">
+      <h3>About links</h3>
+      <ul class="ticks">
+        <li>Chrome and Edge hide <b>https://</b> in the address bar: Smart Snap puts it back, so the link works. Addresses on your own network (localhost, 192.168.…) get http://.</li>
+        <li>A link that is wrong or missing can be corrected in the snap's <b>Link</b> box.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="folio"><span>Smart Snap handbook · What each snap records</span><span class="n"></span></div>
+</section>
+
+<!-- =============================================================================================== working on a snap -->
+<section class="page" id="edit">
+  <div class="tab" style="--c: #141414; --on: #f3f0ea"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8M8 13h5"/></svg></i><b>EDIT</b></div>
+  <div class="grain"></div>
+  <div class="pad">
+    <div class="hd">
+      <div class="kicker">Chapter 05 · Working on a snap</div>
+      <h1>Say what you mean. <em>Point at it.</em></h1>
+      <p class="lede">Click a snap in the list to work on it. Everything is saved as you go: there is no Save button.</p>
+    </div>
+    <figure class="fill"><div class="shot"><img src="img/main-light.png" alt=""></div>
+      <figcaption><b>A snap being worked on,</b> in the light appearance: a spot marked on the table, and its comment.</figcaption></figure>
+    <div class="split">
+      <table class="tbl">
+        <tr><th>To</th><th>Do this</th></tr>
+        <tr><td>Add a comment</td><td>Type in the box under the picture. It shows above the picture in the report.</td></tr>
+        <tr><td>Mark a spot</td><td>Click the picture: a circle is drawn.</td></tr>
+        <tr><td>Mark an area</td><td>Drag on the picture: a box is drawn.</td></tr>
+        <tr><td>Remove the mark</td><td>Remove mark. A new mark replaces the old one.</td></tr>
+        <tr><td>Fix the link</td><td>Type in the Link box; clear it to leave the link out.</td></tr>
+      </table>
+      <table class="tbl">
+        <tr><th>To</th><th>Do this</th></tr>
+        <tr><td>Copy the picture</td><td>Copy picture, or <kbd>Ctrl</kbd> + <kbd>C</kbd> when you are not typing.</td></tr>
+        <tr><td>Save the picture</td><td>Save as PNG puts it in Screenshots, named after the application and time.</td></tr>
+        <tr><td>Change the order</td><td>The up and down arrows move it in the report.</td></tr>
+        <tr><td>Delete</td><td>Delete removes the snap; Clear all, above the list, every snap.</td></tr>
+        <tr><td>Move through the list</td><td><kbd>↑</kbd> and <kbd>↓</kbd>.</td></tr>
+      </table>
+    </div>
+    <p class="note-p">Snaps are kept until you create a report or delete them, also after closing Smart Snap or restarting the computer: a report can be built up over several days.</p>
+  </div>
+  <div class="folio"><span>Smart Snap handbook · Working on a snap</span><span class="n"></span></div>
+</section>
+
+<!-- =============================================================================================== the report -->
+<section class="page" id="report">
+  <div class="tab" style="--c: #f0c33c; --on: #141414"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg></i><b>REPORT</b></div>
+  <div class="grain"></div>
+  <div class="pad">
+    <div class="hd">
+      <div class="kicker">Chapter 06 · The PDF report</div>
+      <h1>Every snap, <em>one PDF.</em></h1>
+      <p class="lede">Press <b>Create PDF report</b>. A short form asks for a title and who prepared it; the PDF is saved in the Reports folder. Choose <b>Open</b> or <b>Show in folder</b> when it is ready.</p>
+    </div>
+    <div class="split n">
+      <figure><div class="shot fit dark-bg"><img src="img/report-dialog.png" alt=""></div>
+        <figcaption><b>The report form.</b></figcaption></figure>
+      <div class="stack">
+        <ol class="hsteps">
+          <li><span><b>Title</b>Printed at the top and used for the file name; "Screenshot report" when left empty.</span></li>
+          <li><span><b>Prepared by</b>Optional, and remembered for next time.</span></li>
+          <li><span><b>Keep the screenshots</b>Off to begin with: the snaps leave Smart Snap once they are in the PDF, ready for the next job.</span></li>
+        </ol>
+        <div class="gtk gold">
+          <h3>Creating a report clears its snaps</h3>
+          <p class="note-p" style="font-size: 8.3pt">Unless you tick Keep. Open the PDF and check it before moving on: a report cannot be made again once its snaps are gone.</p>
+        </div>
+      </div>
+    </div>
+    <div class="g2">
+      <figure><div class="shot fit"><img src="img/report-page1.png" alt=""></div>
+        <figcaption><b>The summary:</b> title, who prepared it, when, how many, which applications, and every snap with its link.</figcaption></figure>
+      <figure><div class="shot fit"><img src="img/report-page2.png" alt=""></div>
+        <figcaption><b>One section per snap:</b> the comment, the picture with its mark, a close-up, and the details.</figcaption></figure>
+    </div>
+  </div>
+  <div class="folio"><span>Smart Snap handbook · The PDF report</span><span class="n"></span></div>
+</section>
+
+<!-- =============================================================================================== settings -->
+<section class="page" id="settings">
+  <div class="tab" style="--c: #5b2c83; --on: #f3f0ea"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/></svg></i><b>SETTINGS</b></div>
+  <div class="grain"></div>
+  <div class="pad">
+    <div class="hd">
+      <div class="kicker">Chapter 07 · Settings and the tray</div>
+      <h1>Set it once. <em>Ready every day.</em></h1>
+      <p class="lede">The sliders in the top bar open Settings: where files go, starting with Windows, the shortcuts, and updates.</p>
+    </div>
+    <div class="split w">
+      <figure><div class="shot fit dark-bg"><img src="img/settings.png" alt=""></div>
+        <figcaption><b>Settings,</b> with the Updates part at the bottom.</figcaption></figure>
+      <div class="stack">
+        <table class="tbl">
+          <tr><th>Setting</th><th>What it does</th></tr>
+          <tr><td>Output folder</td><td>Where screenshots and reports are saved. <b>Change…</b> picks another folder; files already saved stay where they are.</td></tr>
+          <tr><td>Start with Windows</td><td>Starts Smart Snap in the tray when you sign in.</td></tr>
+          <tr><td>Shortcuts</td><td>The three shortcuts. If another program already uses one, it says so here: use the button or the tray menu for that one.</td></tr>
+          <tr><td>Updates</td><td>The version you have, and new versions (next page).</td></tr>
+        </table>
+        <div>
+          <h3 class="sub-h">It lives in the tray</h3>
+          <p class="note-p">Smart Snap puts its icon next to the clock. Closing the window does not stop it: it keeps running, so the shortcuts work from any program. Click the icon to open the window; right-click it for the menu, which also has Quit. Tick <b>Start Smart Snap when I sign in to Windows</b> in Settings to have it ready every day.</p>
+        </div>
+        <div class="gtk">
+          <h3>Good to know</h3>
+          <ul class="ticks">
+            <li>Settings ends with <b>Published by SCAFFApps - www.scaffapps.com</b>.</li>
+            <li>The dark and light appearances use the same colours as Multi Screens and Instant Share.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <figure><div class="shot fit dark-bg"><img src="img/bar.png" alt=""></div>
+      <figcaption><b>The bar:</b> each snap button shows its shortcut; Settings is the sliders, at the right.</figcaption></figure>
+  </div>
+  <div class="folio"><span>Smart Snap handbook · Settings</span><span class="n"></span></div>
+</section>
+
+<!-- =============================================================================================== updates -->
+<section class="page dark" id="updates">
+  <div class="tab" style="--c: #5b2c83; --on: #f3f0ea"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5" /></svg></i><b>UPDATE</b></div>
+  <div class="grain"></div>
+  <div class="pad">
+    <div class="hd">
+      <div class="kicker">Chapter 08 · Updates</div>
+      <h1>Always the newest. <em>Never a fuss.</em></h1>
+      <p class="lede">Smart Snap checks for a newer version by itself, shows what is new, and installs it when you say so. Your settings and the snaps waiting for a report stay as they are.</p>
+    </div>
+    <div class="split n">
+      <figure><div class="shot fit dark-bg"><img src="img/updates.png" alt=""></div>
+        <figcaption><b>Settings, when a newer version is out.</b> The version and notes shown are an example.</figcaption></figure>
+      <ol class="hsteps">
+        <li><span><b>Checked for you</b>A few seconds after it starts, and once a day while it runs, it asks GitHub for the newest version. A message says so once, and the Settings button carries a gold dot. <b>Check for updates</b>, also in the tray menu, asks straight away.</span></li>
+        <li><span><b>What is new</b>The new version's notes show in Settings.</span></li>
+        <li><span><b>Update now</b>Downloads it and checks it against the checksum published with it. A file that does not match is not used.</span></li>
+        <li><span><b>Installed in place</b>Windows asks for permission; Smart Snap closes, installs the new version and opens again.</span></li>
+      </ol>
+    </div>
+    <figure><div class="shot fit dark-bg"><img src="img/toolbar-dot.png" alt=""></div>
+      <figcaption><b>A newer version is out:</b> the Settings button carries a gold dot until you update.</figcaption></figure>
+    <div class="facts c3">
+      <div class="fact"><h3>Nothing about you</h3><p>A check asks only for the version number: nothing about you or your snaps is sent, and nothing is downloaded until you choose to.</p></div>
+      <div class="fact"><h3>The SCAFFApps Suite</h3><p>Installs, opens and updates Smart Snap and the other SCAFFApps apps from one window.</p></div>
+      <div class="fact"><h3>Turning the checks off</h3><p>Clear <b>Check for updates automatically</b>: GitHub is then asked only when you choose to.</p></div>
+    </div>
+  </div>
+  <div class="folio"><span>Smart Snap handbook · Updates</span><span class="n"></span></div>
+</section>
+
+<!-- =============================================================================================== shortcuts and help -->
+<section class="page" id="keys">
+  <div class="tab" style="--c: #141414; --on: #f3f0ea"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg></i><b>KEYS</b></div>
+  <div class="grain"></div>
+  <div class="pad">
+    <div class="hd">
+      <div class="kicker">Chapter 09 · Shortcuts and troubleshooting</div>
+      <h1>The keys. <em>The fixes.</em></h1>
+    </div>
+    <table class="tbl tight">
+      <tr><th style="width: 46mm">Keys</th><th style="width: 40mm">Where</th><th>Action</th></tr>
+      <tr><td><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>S</kbd></td><td>Anywhere</td><td>Snap an area or a window.</td></tr>
+      <tr><td><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>W</kbd></td><td>Anywhere</td><td>Snap the window in front.</td></tr>
+      <tr><td><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>F</kbd></td><td>Anywhere</td><td>Snap the full screen.</td></tr>
+      <tr><td><kbd>Esc</kbd> or right-click</td><td>Choosing an area</td><td>Cancel.</td></tr>
+      <tr><td><kbd>Enter</kbd></td><td>Choosing an area</td><td>Take the whole display.</td></tr>
+      <tr><td><kbd>↑</kbd> <kbd>↓</kbd></td><td>Smart Snap window</td><td>The previous or next snap.</td></tr>
+      <tr><td><kbd>Ctrl</kbd> + <kbd>C</kbd></td><td>Smart Snap window</td><td>Copy the picture.</td></tr>
+    </table>
+    <div class="kicker" style="margin-top: 1mm">What it does not do</div>
+    <div class="morelist">
+      <div><h3>No scrolling</h3><p>A snap holds what is on screen, not the whole length of a web page.</p></div>
+      <div><h3>The address bar's link</h3><p>If you were typing in it, the typed text is taken. A web app without an address bar gives no link.</p></div>
+      <div><h3>Protected content</h3><p>Windows shows some video players and private windows as black in every screenshot.</p></div>
+    </div>
+    <div class="kicker" style="margin-top: 1mm">If something is not right</div>
+    <table class="tbl tight">
+      <tr><th style="width: 62mm">What you see</th><th>What to do</th></tr>
+      <tr><td>"Windows protected your PC"</td><td>Choose More info, then Run anyway. The installer is not code-signed.</td></tr>
+      <tr><td>A shortcut does nothing</td><td>Check that Smart Snap is in the tray. Settings says if another program holds the shortcut.</td></tr>
+      <tr><td>The wrong application is recorded</td><td>For an area snap, the window in the middle of the area counts. For a window snap, click the window first.</td></tr>
+      <tr><td>No link for a web page</td><td>The browser may be unusual or busy: type the address into the Link box.</td></tr>
+      <tr><td>The application's name or icon is missing</td><td>The program may be running as administrator. The picture is still taken.</td></tr>
+      <tr><td>Old snaps are in a new report</td><td>Snaps stay until reported or deleted: delete them first, or use Clear all.</td></tr>
+      <tr><td>A picture or report is missing</td><td>Press the folder button in the top bar.</td></tr>
+    </table>
+    <div class="split">
+      <div class="gtk gold">
+        <h3>Need a hand?</h3>
+        <ul class="ticks">
+          <li>Write to <b>info@scaffapps.com</b> with what you see and what you expected.</li>
+          <li>Say which version you have: <b>Settings</b>, under <b>Updates</b>.</li>
+        </ul>
+      </div>
+      <div class="gtk">
+        <h3>Start fresh</h3>
+        <ul class="ticks">
+          <li><b>Clear all</b>, above the list, removes every snap after asking.</li>
+          <li><b>Windows only:</b> Smart Snap relies on Windows to name the window and read the browser's address.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="folio"><span>Smart Snap handbook · Shortcuts and help</span><span class="n"></span></div>
+</section>
+
+<!-- =============================================================================================== back cover -->
+<section class="page back" id="back">
+  <div class="grain"></div>
+  <div class="lbl top"><span>SCAFFApps</span><span>/</span><span>Smart Snap</span><span class="dot">·</span><span>Published by SCAFFApps</span></div>
+  <div class="rule r1"></div>
+  <div class="bigword"><div class="w1">Useful apps</div><div class="w2">for every laptop.</div><div class="sel"><b></b><b></b><b></b><b></b></div></div>
+  <div class="ruler" aria-hidden="true"></div>
+  <div class="rule r2"></div>
+  <p class="cta">Smart Snap is one of the SCAFFApps apps: small, focused tools for people who work on a laptop all day. Each installs in a moment and keeps itself up to date.</p>
+  <div class="concrete"></div>
+  <div class="family">
+    <div><img src="img/family-multi-screens.svg" alt="">Multi Screens</div>
+    <div><img src="img/family-smart-snap.svg" alt="">Smart Snap</div>
+    <div><img src="img/family-instant-share.svg" alt="">Instant Share</div>
+    <div><img src="img/family-suite.svg" alt="">SCAFFApps Suite</div>
+    <div><span class="more">+</span>And more to come</div>
+  </div>
+  <div class="ask">
+    <div class="sticker"><h2>Every app, <em>in one window.</em></h2></div>
+    <p>The <b>SCAFFApps Suite</b> installs, opens and updates them all, and updates itself: one place to see which version you have and what is new. Get it, and every app, from <b>github.com/Rady193</b>.</p>
+    <div class="askgrid">
+      <div class="shot"><img src="img/suite-home.png" alt=""></div>
+      <div class="shot"><img src="img/suite-updates.png" alt=""></div>
+      <div class="shot"><img src="img/suite-settings.png" alt=""></div>
+      <div class="shot"><img src="img/suite-home-light.png" alt=""></div>
+    </div>
+  </div>
+  <div class="end">
+    <div class="col">
+      <img class="lgs" src="img/logo-st.svg" alt="SCAFFApps">
+    </div>
+    <div class="col">
+      <div class="qr"><img src="img/qr.png" alt="QR code for www.scaffapps.com"><i></i><i></i><i></i><i></i></div>
+      <div class="url">www.scaffapps.com</div>
+      <div class="ct">Contact us</div>
+      <div class="mail">info@scaffapps.com</div>
+    </div>
+  </div>
+</section>
+
+<script>
+  // as the brochure: the footer's wordmark, a ruler down the outer edge of every page with a tab (ticks every
+  // centimetre), the folio numbers, and the page numbers of the contents and the cover lines, from the page order
+  const pages = [...document.querySelectorAll('.page')]
+  const mm = 96 / 25.4
+  pages.forEach(p => { const f = p.querySelector('.folio'); if (f) f.insertAdjacentHTML('afterbegin', '<img class="wmi" src="img/logo-wm.svg" alt="SCAFFApps">')
+    if (p.querySelector('.tab') && !p.querySelector('.ruler')) p.insertAdjacentHTML('beforeend', '<div class="ruler" aria-hidden="true"></div>') })
+  document.querySelectorAll('.ruler').forEach(r => { const h = r.getBoundingClientRect().height / mm
+    for (let y = 0, k = 1; y <= h; y += 10, k++) r.insertAdjacentHTML('beforeend', `<i style="top:${y}mm"></i><div style="top:${y}mm">${String(k).padStart(2, '0')}</div>`) })
+  pages.forEach((p, i) => p.querySelectorAll('.folio .n').forEach(n => { n.textContent = String(i + 1).padStart(2, '0') }))
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    const to = document.getElementById(a.getAttribute('href').slice(1)), n = String(pages.indexOf(to) + 1).padStart(2, '0')
+    const slot = a.querySelector('.n'); if (slot) slot.textContent = n; else if (!a.textContent) a.textContent = n
+  })
+</script>
 </body>
 </html>

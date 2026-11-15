@@ -13,3 +13,8 @@ desktop.ini
 # OneDrive / sync conflict copies
 *-ROG.*
 *-DESKTOP-*.*
+
+# Python caches (the handbook build), the handbook page previews and its print folder
+__pycache__/
+handbook/preview/
+handbook/build/
