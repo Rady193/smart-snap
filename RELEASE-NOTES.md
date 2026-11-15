@@ -1,5 +1,31 @@
 # Release notes
 
+## 1.1.1 — 16 November 2026
+
+A shorter sign-up window, and "Published by SCAFFApps" at the end of Settings.
+
+### Downloads
+
+| File | Size | SHA-256 |
+|---|---|---|
+| `Smart-Snap-Setup-1.1.1.exe` | 78.0 MB | `44F8CACAB29A5B9B3D869AFCDF2A11A1E651DDCD57C33CFB629CB39AFE4DB7CF` |
+
+For 64-bit Windows 10 and 11. Not code-signed, so Windows SmartScreen may ask for confirmation on first run.
+
+### Changed
+
+- **The sign-up window** (your name and e-mail, asked once) ends with "Published by **SCAFFApps** · www.scaffapps.com", without the paragraph above it.
+- **Settings** ends with the same line; the Updates heading shows "Version 1.1.1".
+
+### Updating from 1.1.0
+
+- Settings > Updates > **Update now**, or **Update** in the SCAFFApps Suite. Windows asks for permission; Smart Snap closes, is updated and opens again.
+
+### Tested
+
+- The SCAFFApps Suite 1.0.0 updated Smart Snap 1.1.0 to 1.1.1 with its own button, against a stand-in for GitHub offering this installer, while Smart Snap was open: downloaded, checked against both checksums, Smart Snap closed, Windows' permission, installed, Smart Snap opened again; Windows lists 1.1.1. Microsoft Defender finds nothing in the installer.
+- Settings in the new build: the line at the end, SCAFFApps in bold.
+
 ## 1.1.0 — 16 November 2026
 
 Installed, not portable, in the SCAFFApps folder; the SCAFFApps colours; your name and e-mail asked once.

@@ -275,6 +275,8 @@ dialog { max-height: 90vh; }
 dialog form { max-height: 90vh; overflow-y: auto; }
 .update-box { padding-top: 12px; border-top: 1px solid var(--line); }
 .update-head { display: flex; align-items: baseline; justify-content: space-between; }
+.credit { margin: 4px 0 0; padding-top: 10px; border-top: 1px solid var(--line); color: var(--dim); font-size: 11px; }
+.credit b { color: var(--text); font-weight: 600; }
 .update-line { color: var(--text); }
 .update-error { color: var(--danger); }
 .update-row { display: flex; gap: 8px; }

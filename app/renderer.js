@@ -351,7 +351,7 @@ function renderUpdates() {
   const s = updateInfo;
   box.replaceChildren(h('div', { className: 'update-head' },
     h('div', { className: 'label', textContent: 'Updates' }),
-    s ? h('span', { className: 'dim', textContent: `Smart Snap ${s.current} · SCAFFApps` }) : null));
+    s ? h('span', { className: 'dim', textContent: `Version ${s.current}` }) : null));
   if (!s) return;
   const l = s.latest;
   const row = (...buttons) => h('div', { className: 'update-row' }, ...buttons);
