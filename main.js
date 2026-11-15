@@ -23,7 +23,7 @@ const CUSTOM_TITLE_BAR = process.platform === 'win32';
 const TITLE_BAR_HEIGHT = 34;
 // Must match --surface / --text in app/style.css.
 const TITLE_BAR = {
-  dark: { color: '#161920', symbolColor: '#cccccc' },
+  dark: { color: '#191a1b', symbolColor: '#cccccc' },
   light: { color: '#ffffff', symbolColor: '#171a21' },
 };
 
