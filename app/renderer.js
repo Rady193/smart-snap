@@ -20,9 +20,11 @@ $('theme-btn').onclick = () => applyTheme(document.documentElement.dataset.theme
 
 // ---- Toast --------------------------------------------------------------------
 let toastTimer = 0;
-function toast(text, actions = [], error = false) {
+function toast(text, actions = [], error = false, onClick = null) {
   clearTimeout(toastTimer);
   $('toast-text').textContent = text;
+  $('toast-text').onclick = onClick ? () => { hideToast(); onClick(); } : null;
+  $('toast').classList.toggle('clickable', !!onClick);
   const box = $('toast-actions');
   box.replaceChildren(...actions.map(([label, fn]) => {
     const b = document.createElement('button');
@@ -256,14 +258,148 @@ $('folder-btn').onclick = async () => {
   const r = await api.output.open();
   if (r.error) toast(`The folder could not be opened: ${r.error}`, [], true);
 };
-$('settings-btn').onclick = async () => {
+async function openSettings() {
   config = await api.config();
   $('s-folder').textContent = (await api.output.get()).dir;
   $('s-login').checked = config.startWithWindows;
-  $('settings-dlg').showModal();
-};
+  renderUpdates();
+  if (!$('settings-dlg').open) $('settings-dlg').showModal();
+  // Opened while a new version is waiting: show that part, which comes last.
+  if (updateWaiting()) requestAnimationFrame(() => { $('settings-dlg').querySelector('form').scrollTop = 1e6; });
+}
+$('settings-btn').onclick = openSettings;
 $('s-choose').onclick = async () => { $('s-folder').textContent = (await api.output.choose()).dir; };
 $('s-login').onchange = () => api.settings({ startWithWindows: $('s-login').checked });
+
+// ---- Updates ------------------------------------------------------------------
+// The main process asks GitHub for the newest release. Settings shows the
+// answer, and the Settings button carries a dot while a newer version waits.
+let updateInfo = null;
+
+function h(tag, props = {}, ...children) {
+  const el = Object.assign(document.createElement(tag), props);
+  el.append(...children.filter((c) => c != null));
+  return el;
+}
+const megabytes = (bytes) => (bytes / 1048576).toFixed(1);
+const updateWaiting = () => !!updateInfo && ['available', 'downloading', 'installing'].includes(updateInfo.state);
+const whenText = (t) => new Date(t).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+
+const UPDATE_HOW = {
+  installed: 'Windows asks for permission, then Smart Snap closes, installs the new version and opens again. Your settings and snaps are kept.',
+  portable: 'The new version is saved as its own file beside this one and opened in its place. This file is kept; delete it once you no longer need it. Your settings and snaps are kept.',
+};
+const UPDATE_MANUAL = {
+  source: 'This copy runs from source code, so it cannot update itself. Download the new version from the release page.',
+  other: 'This copy cannot update itself. Download the new version from the release page.',
+  'no-file': 'The release has no file for this kind of copy. Download it from the release page.',
+  unverified: 'The download could not be checked against a published checksum, so it is not installed automatically. Download it from the release page.',
+};
+
+function showUpdate(status) {
+  const before = updateInfo;
+  updateInfo = status;
+  const waiting = updateWaiting();
+  $('settings-btn').classList.toggle('has-update', waiting);
+  $('settings-btn').title = waiting ? `Settings: version ${status.latest.version} is available` : 'Settings';
+  if ($('settings-dlg').open) renderUpdates();
+  // Announced once per version; after that the dot is the reminder.
+  if (status.state === 'available' && (!before || before.state !== 'available')
+      && localStorage.getItem('updateAnnounced') !== status.latest.version) {
+    localStorage.setItem('updateAnnounced', status.latest.version);
+    toast(`Smart Snap ${status.latest.version} is available. Click here to see what is new.`, [], false, openSettings);
+  }
+}
+
+// Release notes are written in Markdown. Headings, lists, paragraphs, bold and
+// code are shown; the download table and the test record are left to the
+// release page.
+function releaseNotes(markdown) {
+  const inline = (text) => text.split(/(\*\*[^*]+\*\*|`[^`]+`)/).filter(Boolean).map((part) => {
+    if (part.length > 4 && part.startsWith('**') && part.endsWith('**')) return h('strong', { textContent: part.slice(2, -2) });
+    if (part.length > 2 && part.startsWith('`') && part.endsWith('`')) return h('code', { textContent: part.slice(1, -1) });
+    return document.createTextNode(part);
+  });
+  const box = h('div', { className: 'update-notes' });
+  let list = null;
+  let skip = false;
+  for (const raw of String(markdown || '').split(/\r?\n/)) {
+    const line = raw.trim();
+    const heading = /^#{1,6}\s+(.*)$/.exec(line);
+    if (heading) {
+      list = null;
+      skip = /^(downloads?|tested|not tested|seen once)/i.test(heading[1]);
+      if (!skip) box.append(h('h4', {}, ...inline(heading[1])));
+      continue;
+    }
+    if (!line) { list = null; continue; }
+    if (skip || line.startsWith('|')) continue;
+    const item = /^[-*]\s+(.*)$/.exec(line);
+    if (item) {
+      if (!list) { list = h('ul'); box.append(list); }
+      list.append(h('li', {}, ...inline(item[1])));
+    } else {
+      list = null;
+      box.append(h('p', {}, ...inline(line)));
+    }
+  }
+  return box.childNodes.length ? box : null;
+}
+
+function renderUpdates() {
+  const box = $('s-updates');
+  const s = updateInfo;
+  box.replaceChildren(h('div', { className: 'update-head' },
+    h('div', { className: 'label', textContent: 'Updates' }),
+    s ? h('span', { className: 'dim', textContent: `Smart Snap ${s.current} · SCAFFApps` }) : null));
+  if (!s) return;
+  const l = s.latest;
+  const row = (...buttons) => h('div', { className: 'update-row' }, ...buttons);
+  const button = (text, onclick, primary = false, disabled = false) => h('button', { type: 'button', className: primary ? 'primary' : '', textContent: text, onclick, disabled });
+
+  if (s.state === 'available' && l) {
+    const released = l.published ? ` Released ${new Date(l.published).toLocaleDateString([], { day: 'numeric', month: 'long', year: 'numeric' })}.` : '';
+    box.append(h('p', { className: 'update-line' }, h('strong', { textContent: `Version ${l.version} is available.` }), released));
+    const notes = releaseNotes(l.notes);
+    if (notes) box.append(notes);
+    if (s.error) box.append(h('p', { className: 'update-error', textContent: s.error }));
+    const page = button(l.manual ? 'Open the release page' : 'Release page', () => api.updates.openPage(), !!l.manual);
+    if (!l.manual) {
+      box.append(row(button(`Update now${l.size ? ` (${megabytes(l.size)} MB)` : ''}`, () => api.updates.install(), true), page),
+        h('p', { className: 'dim', textContent: UPDATE_HOW[s.kind] || '' }));
+    } else {
+      box.append(row(page), h('p', { className: 'dim', textContent: UPDATE_MANUAL[l.manual] }));
+    }
+  } else if (s.state === 'downloading' && l) {
+    const p = s.progress || { received: 0, total: l.size };
+    const share = p.total ? Math.min(100, (p.received / p.total) * 100) : 0;
+    box.append(
+      h('p', { className: 'update-line', textContent: `Downloading version ${l.version}: ${megabytes(p.received)} of ${megabytes(p.total)} MB (${Math.floor(share)}%)` }),
+      h('div', { className: 'update-bar' }, h('span', { style: `width: ${share.toFixed(1)}%` })),
+      row(button('Cancel', () => api.updates.cancel())),
+      h('p', { className: 'dim', textContent: 'The file is checked against its published checksum before it is used.' }));
+  } else if (s.state === 'installing') {
+    box.append(h('p', {
+      className: 'update-line',
+      textContent: s.kind === 'portable'
+        ? 'Opening the new version. This window will close.'
+        : 'Starting the installer. Once Windows has your permission, Smart Snap closes and opens again when the update is done.',
+    }));
+  } else {
+    if (s.state === 'error') box.append(h('p', { className: 'update-error', textContent: s.error }));
+    else if (s.state === 'current') box.append(h('p', { className: 'update-line', textContent: 'You have the latest version.' }));
+    else if (s.state === 'checking') box.append(h('p', { className: 'update-line', textContent: 'Asking GitHub for the latest version…' }));
+    box.append(row(button(s.state === 'checking' ? 'Checking…' : 'Check for updates', () => api.updates.check(), false, s.state === 'checking')));
+    if (s.checkedAt && s.state !== 'checking') box.append(h('p', { className: 'dim', textContent: `Last checked ${whenText(s.checkedAt)}.` }));
+  }
+
+  const auto = h('input', { type: 'checkbox', checked: s.auto });
+  auto.addEventListener('change', async () => showUpdate(await api.updates.setAuto(auto.checked)));
+  box.append(h('label', {
+    className: 'check',
+    title: 'Ask GitHub for a newer version when the app starts, and once a day while it stays open. Nothing is downloaded until you choose Update now.',
+  }, auto, 'Check for updates automatically'));
+}
 
 // ---- Keys ---------------------------------------------------------------------
 addEventListener('keydown', (e) => {
@@ -285,8 +421,11 @@ addEventListener('keydown', (e) => {
     $('s-problems').hidden = false;
     $('s-problems').textContent = `Another program already uses ${config.shortcutProblems.map(keyText).join(', ')}. Those shortcuts do not work while it runs; use the buttons or the tray icon instead.`;
   }
-  $('s-version').textContent = `Smart Snap ${config.version} · SCAFFApps`;
   applyTheme(document.documentElement.dataset.theme || 'dark');
+  showUpdate(await api.updates.status());
+  api.updates.onStatus(showUpdate);
+  api.updates.onOpen(openSettings);
+  if (updateInfo.justUpdated) setTimeout(() => toast(`Smart Snap has been updated to version ${updateInfo.current}.`), 1200);
   await refresh();
   api.ready();
 })();

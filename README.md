@@ -12,6 +12,7 @@ Version 1.0.0 · Windows 10 and 11 (64-bit) · Published by SCAFFApps
 - [What each snap records](#what-each-snap-records)
 - [Working on a snap](#working-on-a-snap)
 - [The PDF report](#the-pdf-report)
+- [Updates](#updates)
 - [Keyboard shortcuts](#keyboard-shortcuts)
 - [Where things are saved](#where-things-are-saved)
 - [What it does not do](#what-it-does-not-do)
@@ -105,6 +106,18 @@ The report is A4, with numbered pages. It contains:
 2. One section per snap: the application's icon and name, the window title, your comment, the picture with its mark, a close-up of the marked spot or area, and the details listed under [What each snap records](#what-each-snap-records).
 
 After it is created, choose **Open** or **Show in folder**. Reports are saved in the `Reports` folder.
+
+## Updates
+
+Smart Snap asks GitHub for a newer version a few seconds after it starts and once a day while it runs. Nothing is downloaded until you choose to.
+
+- When a new version is out, a message says so once, and the **Settings** button (the sliders icon) carries a red dot.
+- **Settings → Updates** shows what is new and offers **Update now**. **Check for updates** there (or in the tray menu) asks straight away.
+- The download is checked against the SHA-256 checksum published with the release before it is used. If it does not match, it is not installed.
+- **Installer copy:** Windows asks for permission, then Smart Snap closes, installs the new version and opens again.
+- **Portable copy:** the new version is saved as its own file beside the old one and opened in its place. Delete the old file once you no longer need it.
+- Settings and snaps waiting for a report are kept.
+- Turn off **Check for updates automatically** in Settings to stop the automatic checks. Only the version number is asked for: nothing about you or your snaps is sent.
 
 ## Keyboard shortcuts
 

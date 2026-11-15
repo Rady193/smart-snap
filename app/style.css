@@ -264,3 +264,26 @@ dialog table.keys { margin: 0; }
 :root[data-theme="light"] dialog { box-shadow: 0 24px 60px rgba(20, 28, 50, .25); }
 :root[data-theme="light"] #toast { box-shadow: 0 12px 30px rgba(20, 28, 50, .2); }
 :root[data-theme="light"] .count:not(:empty) { background: var(--danger); }
+
+/* ---- Updates ---------------------------------------------------------------- */
+#settings-btn { position: relative; }
+#settings-btn.has-update::after { content: ""; position: absolute; top: 5px; right: 5px; width: 8px; height: 8px; border-radius: 50%; background: #c74e39; box-shadow: 0 0 0 2px var(--surface); }
+:root[data-theme="light"] #settings-btn.has-update::after { background: var(--danger); }
+dialog { max-height: 90vh; }
+dialog form { max-height: 90vh; overflow-y: auto; }
+.update-box { padding-top: 12px; border-top: 1px solid var(--line); }
+.update-head { display: flex; align-items: baseline; justify-content: space-between; }
+.update-line { color: var(--text); }
+.update-error { color: var(--danger); }
+.update-row { display: flex; gap: 8px; }
+.update-row button { height: 30px; }
+.update-bar { height: 6px; overflow: hidden; background: var(--surface-3); border-radius: 3px; }
+.update-bar span { display: block; height: 100%; background: var(--accent-strong); transition: width .2s; }
+.update-notes { max-height: 200px; overflow-y: auto; padding: 8px 12px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; font-size: 12.5px; }
+.update-notes h4 { margin: 8px 0 4px; font-size: 13px; }
+.update-notes h4:first-child { margin-top: 2px; }
+.update-notes ul { margin: 4px 0; padding-left: 18px; }
+.update-notes p { margin: 4px 0; }
+.update-notes code { font: 12px Consolas, monospace; }
+#toast-text { cursor: default; }
+#toast.clickable #toast-text { cursor: pointer; text-decoration: underline; text-decoration-color: var(--line-strong); }

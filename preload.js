@@ -29,4 +29,14 @@ contextBridge.exposeInMainWorld('smartSnap', {
     open: () => ipcRenderer.invoke('output-open'),
   },
   settings: (change) => ipcRenderer.invoke('settings-set', change),
+  updates: {
+    status: () => ipcRenderer.invoke('update-status'),
+    check: () => ipcRenderer.invoke('update-check'),
+    install: () => ipcRenderer.invoke('update-install'),
+    cancel: () => ipcRenderer.invoke('update-cancel'),
+    setAuto: (on) => ipcRenderer.invoke('update-auto', on),
+    openPage: () => ipcRenderer.invoke('update-page'),
+    onStatus: (callback) => ipcRenderer.on('update-status', (_event, status) => callback(status)),
+    onOpen: (callback) => ipcRenderer.on('open-updates', () => callback()),
+  },
 });
