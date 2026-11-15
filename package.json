@@ -39,8 +39,7 @@
     "afterPack": "build/after-pack.js",
     "win": {
       "target": [
-        "nsis",
-        "portable"
+        "nsis"
       ],
       "icon": "build/icon.ico",
       "signAndEditExecutable": false
@@ -53,10 +52,8 @@
       "createStartMenuShortcut": true,
       "shortcutName": "Smart Snap",
       "artifactName": "Smart-Snap-Setup-${version}.${ext}",
-      "include": "build/installer.nsh"
-    },
-    "portable": {
-      "artifactName": "Smart-Snap-${version}-portable.${ext}"
+      "include": "build/installer.nsh",
+      "menuCategory": "SCAFFApps"
     }
   }
 }
