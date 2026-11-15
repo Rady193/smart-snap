@@ -2,7 +2,9 @@
 
 Smart Snap takes screenshots that remember where they came from. Each snap records the application it was taken from, the window title and, for web browsers, the address of the page. Add a comment, mark a spot, and turn all your snaps into one PDF report.
 
-Version 1.0.0 · Windows 10 and 11 (64-bit) · Published by SCAFFApps
+Version 1.0.1 · Windows 10 and 11 (64-bit) · Published by SCAFFApps
+
+The **[handbook](Smart%20Snap%20Handbook.pdf)** explains everything, with pictures.
 
 ## Contents
 
@@ -26,8 +28,8 @@ Download from the [Releases page](https://github.com/Rady193/smart-snap/releases
 
 | File | What it is |
 |---|---|
-| `Smart-Snap-Setup-1.0.0.exe` | Installer. Installs for everyone on the computer, in `C:\Program Files\Smart Snap` unless you choose another folder, so Windows asks for administrator permission once. Adds Start menu and desktop shortcuts, and can be removed from Windows Settings. |
-| `Smart-Snap-1.0.0-portable.exe` | Single file. Nothing is installed and no administrator permission is needed. |
+| `Smart-Snap-Setup-1.0.1.exe` | Installer. Installs for everyone on the computer, in `C:\Program Files\Smart Snap` unless you choose another folder, so Windows asks for administrator permission once. Adds Start menu and desktop shortcuts, and can be removed from Windows Settings. |
+| `Smart-Snap-1.0.1-portable.exe` | Single file. Nothing is installed and no administrator permission is needed. |
 
 The app is not code-signed, so the first time you run either file Windows SmartScreen may show "Windows protected your PC". Choose **More info**, then **Run anyway**.
 
@@ -185,6 +187,7 @@ npm run dist
 | `app/index.html`, `app/style.css`, `app/renderer.js` | The app window. |
 | `app/overlay.html` | The frozen, dimmed screen on which an area is chosen. |
 | `app/theme-early.js` | Applies the saved light or dark appearance before the window is first drawn. |
+| `handbook/` | `handbook.html`, its pictures, and `build-handbook.js`, which prints it to `Smart Snap Handbook.pdf`: `node_modules\electron\dist\electron.exe handbookbuild-handbook.js`. |
 | `build/` | Icon files and the script that draws them, the packaging hook, and `installer.nsh`, the installer page that asks for the output folder. |
 
 ## Licence
