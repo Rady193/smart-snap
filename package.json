@@ -1,0 +1,60 @@
+{
+  "name": "smart-snap",
+  "productName": "Smart Snap",
+  "version": "1.0.0",
+  "description": "Screenshots that remember where they came from, collected into a PDF report",
+  "author": "SCAFFApps",
+  "license": "SEE LICENSE IN LICENSE",
+  "homepage": "https://github.com/Rady193/smart-snap",
+  "repository": "github:Rady193/smart-snap",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8",
+    "rcedit": "^4.0.1"
+  },
+  "build": {
+    "appId": "com.scaffapps.smartsnap",
+    "productName": "Smart Snap",
+    "copyright": "Copyright © 2026 SCAFFApps",
+    "files": [
+      "main.js",
+      "preload.js",
+      "overlay-preload.js",
+      "windows.ps1",
+      "app/**"
+    ],
+    "publish": null,
+    "directories": {
+      "output": "release"
+    },
+    "electronDist": "node_modules/electron/dist",
+    "afterPack": "build/after-pack.js",
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "build/icon.ico",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Smart Snap",
+      "artifactName": "Smart-Snap-Setup-${version}.${ext}",
+      "include": "build/installer.nsh"
+    },
+    "portable": {
+      "artifactName": "Smart-Snap-${version}-portable.${ext}"
+    }
+  }
+}

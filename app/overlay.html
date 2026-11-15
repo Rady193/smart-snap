@@ -1,0 +1,134 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'self' 'unsafe-inline'">
+<title>Smart Snap selection</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; cursor: crosshair; user-select: none; background: #000; font: 13px/1.4 "Segoe UI", system-ui, sans-serif; }
+  #shot { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  /* The dimming is drawn around the chosen box by four strips. */
+  .dim { position: fixed; background: rgba(8, 10, 16, .45); pointer-events: none; }
+  #box { position: fixed; display: none; outline: 2px solid #6c8cff; box-shadow: 0 0 0 1px rgba(255, 255, 255, .55) inset; pointer-events: none; }
+  #box.window { outline-color: #f0c33c; }
+  #size { position: fixed; display: none; padding: 3px 7px; color: #fff; background: rgba(20, 22, 30, .88); border-radius: 6px; font-size: 12px; font-variant-numeric: tabular-nums; pointer-events: none; white-space: nowrap; max-width: 60vw; overflow: hidden; text-overflow: ellipsis; }
+  #hint { position: fixed; left: 50%; top: 18px; transform: translateX(-50%); display: flex; gap: 14px; padding: 8px 14px; color: #eceef3; background: rgba(20, 22, 30, .9); border: 1px solid rgba(255, 255, 255, .12); border-radius: 10px; box-shadow: 0 10px 30px rgba(0, 0, 0, .35); pointer-events: none; transition: opacity .15s; }
+  #hint b { color: #fff; font-weight: 600; }
+  #hint kbd { padding: 0 5px; border: 1px solid rgba(255, 255, 255, .25); border-radius: 4px; font: inherit; font-size: 11px; }
+  body.dragging #hint { opacity: 0; }
+</style>
+</head>
+<body>
+<img id="shot" alt="">
+<div class="dim" id="d-top"></div><div class="dim" id="d-left"></div><div class="dim" id="d-right"></div><div class="dim" id="d-bottom"></div>
+<div id="box"></div>
+<div id="size"></div>
+<div id="hint"><span><b>Drag</b> to snap an area</span><span><b>Click</b> a window to snap it</span><span><kbd>Esc</kbd> cancel</span></div>
+<script>
+(() => {
+  const shot = document.getElementById('shot');
+  const box = document.getElementById('box');
+  const size = document.getElementById('size');
+  const dims = ['top', 'left', 'right', 'bottom'].map((k) => document.getElementById('d-' + k));
+  let windows = [];
+  let start = null;
+  let current = null;
+  let finished = false;
+  const ratio = () => (shot.naturalWidth || innerWidth) / innerWidth;
+
+  // Dims everything outside rectangle r (or the whole screen when r is null).
+  function draw(r, kind, label) {
+    const W = innerWidth, H = innerHeight;
+    if (!r) {
+      Object.assign(dims[0].style, { left: 0, top: 0, width: W + 'px', height: H + 'px' });
+      for (const d of dims.slice(1)) d.style.width = '0';
+      box.style.display = 'none'; size.style.display = 'none';
+      return;
+    }
+    Object.assign(dims[0].style, { left: 0, top: 0, width: W + 'px', height: Math.max(0, r.y) + 'px' });
+    Object.assign(dims[3].style, { left: 0, top: (r.y + r.h) + 'px', width: W + 'px', height: Math.max(0, H - r.y - r.h) + 'px' });
+    Object.assign(dims[1].style, { left: 0, top: r.y + 'px', width: Math.max(0, r.x) + 'px', height: r.h + 'px' });
+    Object.assign(dims[2].style, { left: (r.x + r.w) + 'px', top: r.y + 'px', width: Math.max(0, W - r.x - r.w) + 'px', height: r.h + 'px' });
+    Object.assign(box.style, { display: 'block', left: r.x + 'px', top: r.y + 'px', width: r.w + 'px', height: r.h + 'px' });
+    box.className = kind;
+    size.textContent = label;
+    size.style.display = 'block';
+    const below = r.y + r.h + 8;
+    size.style.left = Math.min(Math.max(4, r.x), W - size.offsetWidth - 4) + 'px';
+    size.style.top = (below + 26 < H ? below : Math.max(4, r.y - 30)) + 'px';
+    if (r.y < 4 && r.h > H - 40) size.style.top = '60px';
+  }
+
+  const clip = (w) => {
+    const x = Math.max(0, w.x), y = Math.max(0, w.y);
+    return { x, y, w: Math.min(innerWidth, w.x + w.w) - x, h: Math.min(innerHeight, w.y + w.h) - y, hwnd: w.hwnd, title: w.title };
+  };
+  const windowAt = (x, y) => {
+    const w = windows.find((w) => x >= w.x && y >= w.y && x < w.x + w.w && y < w.y + w.h);
+    return w ? clip(w) : null;
+  };
+  const px = (r) => `${Math.round(r.w * ratio())} × ${Math.round(r.h * ratio())}`;
+
+  function hover(e) {
+    current = windowAt(e.clientX, e.clientY);
+    if (current) draw(current, 'window', (current.title ? current.title + ' · ' : '') + px(current));
+    else draw(null);
+  }
+
+  function finish(result) {
+    if (finished) return;
+    finished = true;
+    window.overlay.done(result);
+  }
+
+  window.overlay.onImage((data) => {
+    windows = data.windows || [];
+    shot.onload = () => {
+      draw(null);
+      requestAnimationFrame(() => requestAnimationFrame(() => window.overlay.ready()));
+    };
+    shot.src = data.src;
+  });
+
+  addEventListener('mousedown', (e) => {
+    if (e.button === 2) return finish(null);
+    if (e.button !== 0) return;
+    start = { x: e.clientX, y: e.clientY };
+  });
+
+  addEventListener('mousemove', (e) => {
+    if (!start) return hover(e);
+    const dx = e.clientX - start.x, dy = e.clientY - start.y;
+    if (Math.abs(dx) < 4 && Math.abs(dy) < 4 && !document.body.classList.contains('dragging')) return;
+    document.body.classList.add('dragging');
+    current = {
+      x: Math.min(start.x, e.clientX), y: Math.min(start.y, e.clientY),
+      w: Math.abs(dx), h: Math.abs(dy),
+    };
+    draw(current, '', px(current));
+  });
+
+  addEventListener('mouseup', (e) => {
+    if (e.button !== 0 || !start) return;
+    const dragging = document.body.classList.contains('dragging');
+    start = null;
+    document.body.classList.remove('dragging');
+    if (dragging) {
+      if (current && current.w >= 3 && current.h >= 3) finish({ x: current.x, y: current.y, w: current.w, h: current.h });
+      else draw(null);
+      return;
+    }
+    // A click takes the window under the mouse, or the whole display.
+    const w = windowAt(e.clientX, e.clientY);
+    finish(w ? { x: w.x, y: w.y, w: w.w, h: w.h, hwnd: w.hwnd } : { x: 0, y: 0, w: innerWidth, h: innerHeight });
+  });
+
+  addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') finish(null);
+    if (e.key === 'Enter') finish({ x: 0, y: 0, w: innerWidth, h: innerHeight });
+  });
+  addEventListener('contextmenu', (e) => e.preventDefault());
+})();
+</script>
+</body>
+</html>
