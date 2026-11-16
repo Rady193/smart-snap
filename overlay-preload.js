@@ -9,4 +9,10 @@ contextBridge.exposeInMainWorld('overlay', {
   // { x, y, w, h } in this display's CSS pixels, plus `hwnd` when a window was
   // clicked; `null` cancels.
   done: (result) => ipcRenderer.send('overlay-done', result),
+  // Once the picture is taken: { area, number } to ask for the snap's comment
+  // beside the area; then the application's name, when it is known.
+  onComment: (callback) => ipcRenderer.once('overlay-comment', (_event, data) => callback(data)),
+  onApp: (callback) => ipcRenderer.on('overlay-app', (_event, name) => callback(name)),
+  // { action: "save" | "open" | "discard", text }
+  commentDone: (answer) => ipcRenderer.send('overlay-comment-done', answer),
 });

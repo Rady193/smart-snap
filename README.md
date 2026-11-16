@@ -2,7 +2,7 @@
 
 Smart Snap takes screenshots that remember where they came from. Each snap records the application it was taken from, the window title and, for web browsers, the address of the page. Add a comment, mark a spot, and turn all your snaps into one PDF report.
 
-Version 1.1.3 · Windows 10 and 11 (64-bit) · Published by SCAFFApps
+Version 1.1.4 · Windows 10 and 11 (64-bit) · Published by SCAFFApps
 
 The **[handbook](Smart%20Snap%20Handbook.pdf)** explains everything, with pictures.
 
@@ -24,7 +24,7 @@ The **[handbook](Smart%20Snap%20Handbook.pdf)** explains everything, with pictur
 
 ## Install
 
-Download `Smart-Snap-Setup-1.1.3.exe` from the [Releases page](https://github.com/Rady193/smart-snap/releases/latest) and run it, or install it from the **SCAFFApps Suite**. It installs for everyone on the computer, in `C:\Program Files\SCAFFApps\Smart Snap` unless you choose another folder, so Windows asks for administrator permission once. It adds a desktop shortcut and a Start menu shortcut in the **SCAFFApps** folder, and can be removed from Windows Settings. A copy installed by an earlier version in `C:\Program Files\Smart Snap` moves to the SCAFFApps folder when it updates.
+Download `Smart-Snap-Setup-1.1.4.exe` from the [Releases page](https://github.com/Rady193/smart-snap/releases/latest) and run it, or install it from the **SCAFFApps Suite**. It installs for everyone on the computer, in `C:\Program Files\SCAFFApps\Smart Snap` unless you choose another folder, so Windows asks for administrator permission once. It adds a desktop shortcut and a Start menu shortcut in the **SCAFFApps** folder, and can be removed from Windows Settings. A copy installed by an earlier version in `C:\Program Files\Smart Snap` moves to the SCAFFApps folder when it updates.
 
 Since 1.1.0 Smart Snap is installed, not portable. A portable copy from before cannot update itself to it: install it with the installer once, then delete the portable file.
 
@@ -47,7 +47,7 @@ The first SCAFFApps app to start on a Windows account asks for your **name** and
 1. Open Smart Snap. It also puts an icon in the tray, next to the clock.
 2. Go to the program or web page you want to capture.
 3. Press **Ctrl + Alt + S** and drag over the part of the screen you want, or click a window to take all of it.
-4. Smart Snap opens with the new snap. Type a comment, and click or drag on the picture to mark what you mean.
+4. A box opens beside the area: type what the reader should notice and press **Ctrl + Enter**. To also mark a spot on the picture, choose **Save and open** instead, then click or drag on the picture in Smart Snap.
 5. Repeat for as many snaps as you need.
 6. Press **Create PDF report**.
 
@@ -57,11 +57,19 @@ Closing the window does not stop Smart Snap: it keeps running in the tray so the
 
 | Kind | Shortcut | What it takes |
 |---|---|---|
-| Area | Ctrl + Alt + S | The screen dims but stays live. **Press, drag and release** to take a rectangle; the picture is taken the moment you let go. **Click** a window to take that window, **Enter** for the whole display, **Esc** or right-click to cancel. While you move the mouse, the window under it is outlined in gold and its size is shown. |
+| Area | Ctrl + Alt + S | The screen dims but stays live. **Press, drag and release** to take a rectangle; the picture is taken the moment you let go. **Click** a window to take that window, **Enter** for the whole display, **Esc** or right-click to cancel. While you move the mouse, the window under it is outlined in gold and its size is shown. Then the comment box opens beside the area (below). |
 | Window | Ctrl + Alt + W | The window you are using, without its shadow. |
 | Full screen | Ctrl + Alt + F | The whole display the mouse is on. |
 
 The same three are buttons at the top of the Smart Snap window and items in the tray menu. When you use a button, Smart Snap hides itself first, so it takes the window you were using before.
+
+**The comment box.** Once an area is chosen, it stays outlined and a box beside it asks for the snap's comment, as Multi Screens asks for a note's. The picture is already taken: the box and the dimming are not in it. Type, then:
+
+- **Save** (or **Ctrl + Enter**) keeps the snap with its comment. Smart Snap stays out of the way, so you can go straight on to the next snap; the snap is in its list.
+- **Save and open** keeps it and opens Smart Snap on it, to mark a spot or an area on the picture.
+- **Discard** (or **Esc**) throws the snap away.
+
+The comment can be left empty and written later in Smart Snap. Window and full-screen snaps have no box: Smart Snap opens on them as before.
 
 **Delay** (beside the buttons) waits 3, 5 or 10 seconds before taking the snap, so you can open a menu or hover over something first. The tray menu also has **Snap an area in 5 seconds**. After a delay, an area snap **freezes** the screen before you choose the area, as Windows' own Snipping Tool does: anything placed over the screen closes open menus and hover effects, so this is the way to snap them.
 

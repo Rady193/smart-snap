@@ -3,6 +3,7 @@ const {
   globalShortcut, Tray, Menu, clipboard, net,
 } = require('electron');
 const crypto = require('crypto');
+const os = require('os');
 const { spawn, execFile } = require('child_process');
 const path = require('path');
 const registration = require('./registration');
@@ -243,22 +244,87 @@ function windowAt(snapshot, x, y) {
 //
 // Live (the usual way): the windows are see-through and never take the
 // keyboard, so the screen goes on moving under them and the program in front
-// stays in front. The picture is taken once the area is chosen, after the
-// windows have gone. Frozen (after a delay): they show each display's picture
+// stays in front. The picture is taken once the area is chosen; the windows
+// are left out of it. Frozen (after a delay): they show each display's picture
 // taken beforehand. A window on top closes open menus and hover effects, so
 // the delay that is there for snapping those freezes the screen first.
+//
+// Once the picture is taken, the chosen display's window stays, the area still
+// outlined, and asks for the snap's comment in a box beside it (askComment), as
+// Multi Screens asks for a note's.
 let overlays = [];
-let overlayDone = null;
+let overlayDone = null;   // the selection, while it is being made
+let commentDone = null;   // the comment box, while it is open
 
-function closeOverlays(result) {
-  const done = overlayDone;
-  overlayDone = null;
+// Windows 10 2004 and later leave a window out of pictures of the screen
+// altogether; before that it would show black, so it is hidden instead.
+const LEFT_OUT_OF_CAPTURE = process.platform === 'win32' && Number(os.release().split('.')[2]) >= 19041;
+
+function endOverlays() {
   for (const o of overlays) if (!o.win.isDestroyed()) o.win.destroy();
   overlays = [];
   globalShortcut.unregister('Escape');
   globalShortcut.unregister('Enter');
+}
+
+// Ends the selection: `null` cancels and closes everything; a chosen area keeps
+// its display's window for the comment.
+function closeOverlays(result) {
+  const done = overlayDone;
+  overlayDone = null;
+  if (!result) endOverlays();
+  else {
+    for (const o of overlays) if (o.display.id !== result.displayId && !o.win.isDestroyed()) o.win.destroy();
+    overlays = overlays.filter((o) => o.display.id === result.displayId);
+    globalShortcut.unregister('Enter');      // Enter is typed in the comment now
+  }
   if (done) done(result);
 }
+
+function finishComment(answer) {
+  const done = commentDone;
+  commentDone = null;
+  endOverlays();
+  if (done) done(answer);
+}
+
+// Esc cancels the selection, or discards the snap while its comment is asked.
+function escape() {
+  if (overlayDone) closeOverlays(null);
+  else if (commentDone) finishComment({ action: 'discard' });
+  else endOverlays();
+}
+
+// Asks for the comment of snap `number` beside `area` (CSS pixels of the
+// display). Resolves to { action: "save" | "open" | "discard", text }.
+function askComment(displayId, area, number) {
+  const o = overlays.find((x) => x.display.id === displayId && !x.win.isDestroyed());
+  if (!o) return Promise.resolve({ action: 'open', text: '' });
+  return new Promise((resolve) => {
+    commentDone = resolve;
+    // The box needs the keyboard, which a live selection never took.
+    if (o.live) { try { o.win.setFocusable(true); } catch { /* typing may need a click first */ } }
+    o.win.show();
+    o.win.focus();
+    o.win.webContents.focus();
+    o.win.webContents.send('overlay-comment', { area, number });
+  });
+}
+
+// The application's name, once it is known, for the comment box's heading.
+function tellCommentApp(name) {
+  for (const o of overlays) if (!o.win.isDestroyed()) o.win.webContents.send('overlay-app', String(name || ''));
+}
+
+ipcMain.on('overlay-comment-done', (event, answer) => {
+  const from = overlays.find((o) => !o.win.isDestroyed() && o.win.webContents === event.sender);
+  if (!from || !commentDone) return;
+  const a = answer && typeof answer === 'object' ? answer : {};
+  finishComment({
+    action: ['save', 'open'].includes(a.action) ? a.action : 'discard',
+    text: String(a.text || '').slice(0, 5000),
+  });
+});
 
 // Window outlines in one display's own coordinates (CSS pixels).
 function outlinesOn(snapshot, d, phys) {
@@ -283,7 +349,7 @@ function selectArea(screens, snapshot, live) {
   return new Promise((resolve) => {
     overlayDone = resolve;
     // Esc and Enter work without the keyboard; a live selection never has it.
-    try { globalShortcut.register('Escape', () => closeOverlays(null)); } catch { /* the overlay's own Esc still works */ }
+    try { globalShortcut.register('Escape', escape); } catch { /* the overlay's own Esc still works */ }
     try { globalShortcut.register('Enter', takeWholeDisplay); } catch { /* the overlay's own Enter still works */ }
     const cursor = screen.getCursorScreenPoint();
     overlays = screens.map((s) => {
@@ -307,6 +373,7 @@ function selectArea(screens, snapshot, live) {
           src: s.image ? 'data:image/jpeg;base64,' + s.image.toJPEG(94).toString('base64') : null,
           scale: s.phys.width / d.bounds.width,
           windows: live ? [] : outlinesOn(snapshot, d, s.phys),
+          theme: TITLE_BAR[loadSettings().appTheme] ? loadSettings().appTheme : 'dark',
         });
       });
       return { win, display: d, live, cursorHere: contains(d.bounds, cursor.x, cursor.y) };
@@ -459,9 +526,15 @@ async function snap(mode, wait = 0) {
       const screens = screen.getAllDisplays().map((d) => ({ display: d, phys: physicalBounds(d), image: null }));
       picked = await selectArea(screens, snapshot, true);
       if (!picked) { if (hidOwn) showMain(); return; }
-      // The selection windows are gone; the screen is drawn again without them.
-      await delay(120);
-      shots = await captureDisplays();
+      if (LEFT_OUT_OF_CAPTURE) {
+        shots = await captureDisplays();
+      } else {
+        // Hidden for the picture, the screen drawn again without it, then back.
+        for (const o of overlays) o.win.hide();
+        await delay(120);
+        shots = await captureDisplays();
+        for (const o of overlays) if (!o.win.isDestroyed()) o.win.showInactive();
+      }
       snapshot = await snapshot;
     } else {
       snapshot = await snapshot;
@@ -511,14 +584,45 @@ async function snap(mode, wait = 0) {
     }
     if (!image || image.isEmpty()) return;
 
-    const info = hwnd ? await ask(`info ${hwnd}`) : null;
-    const saved = await storeSnap(image, mode, info && !info.error ? info : null, displayName);
-    showMain();
-    notify('snaps-changed', { select: saved.id, fresh: true });
+    // The snap is stored while its comment is asked: its application is looked
+    // up meanwhile, and named in the comment box once known.
+    const number = readSnaps().length + 1;
+    const storing = (async () => {
+      const info = hwnd ? await ask(`info ${hwnd}`) : null;
+      return storeSnap(image, mode, info && !info.error ? info : null, displayName);
+    })();
+    if (mode !== 'area') {
+      const saved = await storing;
+      showMain();
+      notify('snaps-changed', { select: saved.id, fresh: true });
+      return;
+    }
+    storing.then((s) => tellCommentApp(s.app.name), () => {});
+    const answer = await askComment(picked.displayId, { x: picked.x, y: picked.y, w: picked.w, h: picked.h }, number);
+    const saved = await storing;
+    if (answer.action === 'discard') {
+      writeSnaps(readSnaps().filter((n) => n.id !== saved.id));
+      removeSnapFiles(saved.id);
+      notify('snaps-changed', {});
+      if (hidOwn) showMain();
+      return;
+    }
+    if (answer.text.trim()) {
+      const list = readSnaps();
+      const n = list.find((x) => x.id === saved.id);
+      if (n) { n.text = answer.text; writeSnaps(list); }
+    }
+    // Saved from the box, Smart Snap stays out of the way, unless asked to open
+    // or the snap was started from its own window.
+    notify('snaps-changed', { select: saved.id, fresh: answer.action === 'open' });
+    if (answer.action === 'open' || hidOwn) showMain();
   } catch (err) {
+    endOverlays();
     showMain();
     notify('snap-error', String(err && err.message || err));
   } finally {
+    commentDone = null;
+    endOverlays();
     snapping = false;
   }
 }

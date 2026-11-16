@@ -109,7 +109,7 @@ def seed(profile, material, icon):
 # ------------------------------------------------------------------------------------------- the pictures
 def overlay_pictures(material):
     """Choosing an area: the app's own selection page (app/overlay.html) over the made-up desktop, the window under the
-    mouse outlined, then an area dragged."""
+    mouse outlined; then an area dragged and let go, with its comment being written in the box beside it."""
     from playwright.sync_api import sync_playwright
     src = "data:image/png;base64," + base64.b64encode(material["desktop"].read_bytes()).decode()
     wins = [{"x": 560, "y": 70, "w": 960, "h": 700, "title": "Sample site - Microsoft Edge"},
@@ -117,7 +117,8 @@ def overlay_pictures(material):
     with sync_playwright() as p:
         b = p.chromium.launch(channel="msedge", headless=True)
         page = b.new_page(viewport={"width": 1600, "height": 900}, device_scale_factor=1.5)
-        page.add_init_script("window.overlay = { onImage: (cb) => { window.__image = cb }, ready: () => {}, done: () => {} }")
+        page.add_init_script("window.overlay = { onImage: (cb) => { window.__image = cb }, ready: () => {}, done: () => {},"
+                             " onComment: (cb) => { window.__comment = cb }, onApp: (cb) => { window.__app = cb }, commentDone: () => {} }")
         page.goto((ROOT / "app" / "overlay.html").as_uri())
         page.evaluate("([src, windows]) => window.__image({ src, windows })", [src, wins])
         page.wait_for_timeout(500)
@@ -129,10 +130,14 @@ def overlay_pictures(material):
         page.mouse.move(600, 430)
         page.mouse.down()
         page.mouse.move(900, 560, steps=8)
-        page.mouse.move(1490, 690, steps=12)
-        page.wait_for_timeout(300)
-        page.screenshot(path=str(IMG / "overlay-area.png"))
+        page.mouse.move(1150, 690, steps=12)
+        page.wait_for_timeout(200)
         page.mouse.up()
+        page.evaluate("window.__comment({ area: null, number: 4 }); window.__app('Microsoft Edge')")
+        page.keyboard.type("The cards sit too close together: add some room between them.")
+        page.mouse.move(1300, 820)
+        page.wait_for_timeout(400)
+        page.screenshot(path=str(IMG / "overlay-area.png"))
         b.close()
 
 

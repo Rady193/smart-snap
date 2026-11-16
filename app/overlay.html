@@ -21,6 +21,37 @@
   #hint b { color: #fff; font-weight: 600; }
   #hint kbd { padding: 0 5px; border: 1px solid rgba(255, 255, 255, .25); border-radius: 4px; font: inherit; font-size: 11px; }
   body.dragging #hint { opacity: 0; }
+
+  /* The comment box beside the chosen area, in Smart Snap's own colours. */
+  :root {
+    --surface: #191a1b; --field: #121314; --line: #333536; --text: #cccccc; --dim: #8c8c8c;
+    --focus: #f0c33c; --primary: #5b2c83; --primary-hover: #45215f; --soft: rgba(91, 44, 131, .3); --button: #202122; --button-hover: #2a2b2c;
+  }
+  :root[data-theme="light"] {
+    --surface: #ffffff; --field: #f6f5f8; --line: #d4d0dc; --text: #17141c; --dim: #6a6175;
+    --focus: #5b2c83; --soft: rgba(91, 44, 131, .1); --button: #f6f5f8; --button-hover: #eceaf0;
+  }
+  body.commenting, body.commenting * { cursor: default; }
+  body.commenting #hint, body.commenting #size { display: none !important; }
+  #card { position: fixed; z-index: 5; width: 330px; display: flex; flex-direction: column; gap: 8px; padding: 12px; color: var(--text);
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 18px 50px rgba(0, 0, 0, .5);
+    font: 13px/1.4 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; user-select: text; box-sizing: border-box; }
+  #card[hidden] { display: none; }
+  #card .head { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+  #card .head b { flex: none; font-weight: 600; }
+  #card .head span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--dim); }
+  #card textarea { width: 100%; min-height: 84px; max-height: 240px; padding: 8px 10px; color: var(--text); background: var(--field);
+    border: 1px solid var(--line); border-radius: 8px; font: inherit; line-height: 1.45; resize: vertical; box-sizing: border-box; cursor: text; }
+  #card textarea:focus { border-color: var(--focus); outline: none; box-shadow: 0 0 0 3px var(--soft); }
+  #card textarea::placeholder { color: var(--dim); }
+  #card .keys { color: var(--dim); font-size: 12px; }
+  #card .row { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+  #card button { height: 28px; padding: 0 10px; color: var(--text); background: var(--button); border: 1px solid var(--line); border-radius: 8px;
+    font: inherit; font-weight: 500; white-space: nowrap; cursor: pointer; }
+  #card button:hover { background: var(--button-hover); }
+  #card button.primary { color: #fff; background: var(--primary); border-color: var(--primary); }
+  #card button.primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
+  #card button:disabled { opacity: .5; cursor: default; }
 </style>
 </head>
 <body>
@@ -29,6 +60,16 @@
 <div id="box"></div>
 <div id="size"></div>
 <div id="hint"><span><b>Drag</b> to snap an area</span><span><b>Click</b> a window to snap it</span><span><kbd>Esc</kbd> cancel</span></div>
+<form id="card" hidden autocomplete="off">
+  <div class="head"><b id="c-title">Snap</b><span id="c-app"></span></div>
+  <textarea id="c-text" rows="4" spellcheck="true" placeholder="Describe what you see here…"></textarea>
+  <div class="keys">Ctrl+Enter saves · Esc discards the snap</div>
+  <div class="row">
+    <button type="button" id="c-discard" title="Throw this snap away">Discard</button>
+    <button type="button" id="c-open" title="Save, then open Smart Snap to mark a spot or area on the picture">Save and open</button>
+    <button type="submit" id="c-save" class="primary" title="Save the snap with this comment (Ctrl+Enter)">Save</button>
+  </div>
+</form>
 <script>
 (() => {
   const shot = document.getElementById('shot');
@@ -41,6 +82,7 @@
   let finished = false;
   let scale = devicePixelRatio;
   let last = null;
+  let chosen = null;
   const ratio = () => (shot.naturalWidth ? shot.naturalWidth / innerWidth : scale);
 
   // Dims everything outside rectangle r (or the whole screen when r is null).
@@ -85,6 +127,14 @@
   function finish(result) {
     if (finished) return;
     finished = true;
+    start = null;
+    document.body.classList.remove('dragging');
+    // The chosen area stays outlined while its picture is taken and its comment written.
+    if (result) {
+      chosen = { x: result.x, y: result.y, w: result.w, h: result.h };
+      document.body.classList.add('commenting');
+      draw(chosen, 'window', '');
+    }
     window.overlay.done(result);
   }
 
@@ -96,6 +146,7 @@
   window.overlay.onImage((data) => {
     windows = data.windows || [];
     if (data.scale) scale = data.scale;
+    if (data.theme) document.documentElement.dataset.theme = data.theme;
     if (!data.src) {
       document.documentElement.classList.add('live');
       return shown();
@@ -107,7 +158,7 @@
   if (window.overlay.onWindows) {
     window.overlay.onWindows((list) => {
       windows = list || [];
-      if (last && !start) hover(last);
+      if (last && !start && !finished) hover(last);
     });
   }
 
@@ -115,6 +166,7 @@
   // released, even outside it; nothing on the page can be dragged away.
   addEventListener('dragstart', (e) => e.preventDefault());
   addEventListener('pointerdown', (e) => {
+    if (finished) return;
     if (e.button === 2) return finish(null);
     if (e.button !== 0) return;
     try { document.documentElement.setPointerCapture(e.pointerId); } catch { /* still works inside the window */ }
@@ -122,6 +174,7 @@
   });
 
   addEventListener('pointermove', (e) => {
+    if (finished) return;
     last = { clientX: e.clientX, clientY: e.clientY };
     if (!start) return hover(e);
     const x = Math.min(innerWidth, Math.max(0, e.clientX)), y = Math.min(innerHeight, Math.max(0, e.clientY));
@@ -133,7 +186,7 @@
   });
 
   addEventListener('pointerup', (e) => {
-    if (e.button !== 0 || !start) return;
+    if (finished || e.button !== 0 || !start) return;
     const dragging = document.body.classList.contains('dragging');
     start = null;
     document.body.classList.remove('dragging');
@@ -148,15 +201,69 @@
   });
 
   addEventListener('pointercancel', () => {
+    if (finished) return;
     start = null;
     document.body.classList.remove('dragging');
     draw(null);
   });
 
   addEventListener('keydown', (e) => {
+    if (asking) {
+      if (e.key === 'Escape') answer('discard');
+      else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); answer('save'); }
+      return;
+    }
+    if (finished) return;
     if (e.key === 'Escape') finish(null);
     if (e.key === 'Enter') finish({ x: 0, y: 0, w: innerWidth, h: innerHeight });
   });
+
+  // ---- The comment, in a box beside the chosen area ----------------------------
+  const card = document.getElementById('card');
+  const text = document.getElementById('c-text');
+  let asking = false;
+
+  // Right of the area, else left of it, below or above it; else inside its corner.
+  function placeCard(r) {
+    const W = innerWidth, H = innerHeight, gap = 12, m = 8;
+    const cw = card.offsetWidth, ch = card.offsetHeight;
+    const clampX = (x) => Math.min(W - cw - m, Math.max(m, x));
+    const clampY = (y) => Math.min(H - ch - m, Math.max(m, y));
+    let x, y;
+    if (r.x + r.w + gap + cw <= W - m) { x = r.x + r.w + gap; y = clampY(r.y); }
+    else if (r.x - gap - cw >= m) { x = r.x - gap - cw; y = clampY(r.y); }
+    else if (r.y + r.h + gap + ch <= H - m) { x = clampX(r.x + r.w - cw); y = r.y + r.h + gap; }
+    else if (r.y - gap - ch >= m) { x = clampX(r.x + r.w - cw); y = r.y - gap - ch; }
+    else { x = clampX(r.x + r.w - cw - 16); y = clampY(r.y + r.h - ch - 16); }
+    card.style.left = x + 'px';
+    card.style.top = y + 'px';
+  }
+
+  function answer(action) {
+    if (!asking) return;
+    asking = false;
+    for (const b of card.querySelectorAll('button')) b.disabled = true;
+    window.overlay.commentDone({ action, text: text.value });
+  }
+
+  if (window.overlay.onComment) {
+    window.overlay.onComment((data) => {
+      const r = data.area || chosen || { x: 0, y: 0, w: innerWidth, h: innerHeight };
+      document.getElementById('c-title').textContent = `Snap ${data.number}`;
+      document.body.classList.add('commenting');
+      draw(r, 'window', '');
+      card.hidden = false;
+      placeCard(r);
+      asking = true;
+      text.focus();
+    });
+    window.overlay.onApp((name) => { document.getElementById('c-app').textContent = name ? '· ' + name : ''; });
+  }
+  card.addEventListener('submit', (e) => { e.preventDefault(); answer('save'); });
+  document.getElementById('c-discard').onclick = () => answer('discard');
+  document.getElementById('c-open').onclick = () => answer('open');
+  // A click outside the box leaves the typing where it was.
+  addEventListener('mousedown', (e) => { if (asking && !card.contains(e.target)) { e.preventDefault(); text.focus(); } });
   addEventListener('contextmenu', (e) => e.preventDefault());
 })();
 </script>

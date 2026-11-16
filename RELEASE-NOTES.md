@@ -1,5 +1,34 @@
 # Release notes
 
+## 1.1.4 — 16 November 2026
+
+Write the comment right beside the area you snap, as in Multi Screens.
+
+### Downloads
+
+| File | Size | SHA-256 |
+|---|---|---|
+| `Smart-Snap-Setup-1.1.4.exe` | 78.0 MB | `E2EA98FF5E7166953EABE325E473952C785704CECBD0147D2D7D8E207510C15D` |
+| `Smart-Snap-Handbook-1.1.4.pdf` | 3.6 MB | `D23DB9BC79FDA6BF337BB6489ECE7DB8FDEF67C94AF03D9E2632F61847257B3A` |
+
+For 64-bit Windows 10 and 11. Not code-signed, so Windows SmartScreen may ask for confirmation on first run.
+
+### Changed
+
+- **The comment box**: once an area is chosen (dragged, a window clicked, or Enter), it stays outlined and a box beside it asks for the snap's comment. The picture is already taken, without the box or the dimming. **Save** or **Ctrl + Enter** keeps the snap with its comment; **Save and open** also opens Smart Snap on it, to mark a spot; **Discard** or **Esc** throws it away. It follows the dark or light appearance.
+- **Smart Snap stays out of the way** after an area snap saved from the box, so the next snap can follow at once; the snap waits in its list. Window and full-screen snaps open Smart Snap as before.
+- **The handbook**: its picture of an area snap shows the comment box.
+
+### Updating from 1.1.3
+
+- Settings > Updates > **Update now**, or **Update** in the SCAFFApps Suite.
+
+### Tested
+
+- The packaged app, with the real mouse and keyboard, over a test window of known colours (keys sent only while the app under test had the keyboard): a live area with a typed comment and Ctrl + Enter was saved with that comment, in the window's own colours, with the box to the right of the area and Smart Snap staying hidden; a frozen area (after a delay) and Esc was discarded; Save and open saved the snap and opened Smart Snap on it.
+- Copy as picture and Create report as in 1.1.3.
+- Microsoft Defender finds nothing in the installer.
+
 ## 1.1.3 — 16 November 2026
 
 Area snaps on the live screen, a smooth press-drag-release, and the report copied as one picture.
