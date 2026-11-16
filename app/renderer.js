@@ -72,6 +72,7 @@ function drawList() {
   }));
   $('count').textContent = snaps.length || '';
   $('report-btn').disabled = !snaps.length;
+  if (!$('copy-report-btn').busy) $('copy-report-btn').disabled = !snaps.length;
   $('clear-btn').hidden = !snaps.length;
   const on = list.querySelector('li.on');
   if (on) on.scrollIntoView({ block: 'nearest' });
@@ -237,6 +238,29 @@ $('report-btn').onclick = () => {
   $('report-dlg').returnValue = '';
   $('report-dlg').showModal();
   $('r-title').focus();
+};
+
+// The bar's Copy as picture: the whole report, with the title and name last
+// typed in the report form, on the clipboard as one picture.
+$('copy-report-btn').onclick = async () => {
+  const btn = $('copy-report-btn');
+  const label = btn.querySelector('span');
+  if (!snaps.length || btn.busy) return;
+  // Let a comment still being typed save first.
+  if (document.activeElement) document.activeElement.blur();
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  btn.busy = true;
+  btn.disabled = true;
+  label.textContent = 'Copying…';
+  const result = await api.report.copyPicture({ title: $('r-title').value, author: config.author });
+  btn.busy = false;
+  btn.disabled = !snaps.length;
+  label.textContent = 'Copy as picture';
+  if (result && !result.error) {
+    toast(`Report copied as a picture (${result.count} screenshot${result.count === 1 ? '' : 's'}): paste it into a chat, an email or a document.`);
+  } else {
+    toast((result && result.error) || 'The report could not be copied as a picture.', [], true);
+  }
 };
 
 // The dialog's note; after a copy it says where the report went for a while.
@@ -454,6 +478,11 @@ addEventListener('keydown', (e) => {
 (async () => {
   config = await api.config();
   for (const k of document.querySelectorAll('kbd[data-key]')) k.textContent = keyText(config.shortcuts[k.dataset.key]);
+  // The shortcut also in each snap button's tip, for a narrow window without the key labels.
+  for (const b of document.querySelectorAll('.snapbtn')) {
+    if (!b.dataset.tip) b.dataset.tip = b.title;
+    b.title = `${b.dataset.tip} (${keyText(config.shortcuts[b.dataset.mode])})`;
+  }
   if (config.shortcutProblems.length) {
     $('s-problems').hidden = false;
     $('s-problems').textContent = `Another program already uses ${config.shortcutProblems.map(keyText).join(', ')}. Those shortcuts do not work while it runs; use the buttons or the tray icon instead.`;

@@ -149,6 +149,13 @@ input[type="checkbox"] { accent-color: var(--accent-strong); width: 15px; height
 .snapbtn { height: 36px; padding: 0 12px; }
 .snapbtn kbd { margin-left: 4px; }
 .delay { display: flex; align-items: center; gap: 6px; color: var(--dim); }
+/* A narrower window: the shortcuts leave the snap buttons first (they stay in
+   the buttons' tips and in Settings), then Copy as picture keeps only its icon. */
+@media (max-width: 1260px) { .snapbtn kbd { display: none; } }
+@media (max-width: 980px) {
+  #copy-report-btn { width: 32px; padding: 0; }
+  #copy-report-btn span, .delay .word { display: none; }
+}
 .count:not(:empty) { min-width: 20px; height: 20px; padding: 0 6px; margin-left: 2px; display: inline-grid; place-items: center; color: #fff; background: #c74e39; border-radius: 10px; font-size: 11.5px; }
 
 /* ---- Main area ----------------------------------------------------------- */

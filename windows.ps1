@@ -4,8 +4,9 @@
 # Reads one command per line on standard input and answers each with one line
 # of JSON on standard output:
 #
-#   snapshot      the visible top-level windows, topmost first, and which one
-#                 is in front (taken the moment a snap starts)
+#   snapshot      the visible top-level windows, topmost first, which one is
+#                 in front (taken the moment a snap starts), and every display's
+#                 exact rectangle
 #   info <hwnd>   details of one window: application name, program file, window
 #                 title, and the page address when the window is a web browser
 #                 (or the folder, for File Explorer)
@@ -49,6 +50,10 @@ public static class SnapNative {
   [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetClassName(IntPtr h, StringBuilder s, int n);
   [DllImport("dwmapi.dll")] static extern int DwmGetWindowAttribute(IntPtr h, int a, out RECT r, int size);
   [DllImport("dwmapi.dll")] static extern int DwmGetWindowAttribute(IntPtr h, int a, out int v, int size);
+  [StructLayout(LayoutKind.Sequential)] struct MONITORINFO { public int Size; public RECT Monitor; public RECT Work; public uint Flags; }
+  delegate bool MonitorProc(IntPtr m, IntPtr dc, IntPtr r, IntPtr p);
+  [DllImport("user32.dll")] static extern bool EnumDisplayMonitors(IntPtr dc, IntPtr clip, MonitorProc f, IntPtr p);
+  [DllImport("user32.dll")] static extern bool GetMonitorInfo(IntPtr m, ref MONITORINFO i);
   [DllImport("kernel32.dll")] static extern IntPtr OpenProcess(uint access, bool inherit, int pid);
   [DllImport("kernel32.dll")] static extern bool CloseHandle(IntPtr h);
   [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] static extern bool QueryFullProcessImageName(IntPtr h, int flags, StringBuilder s, ref int size);
@@ -93,6 +98,18 @@ public static class SnapNative {
       RECT r = Bounds(h);
       if (r.R - r.L < 40 || r.B - r.T < 40) return true;
       list.Add(new SnapWin { Hwnd = h.ToInt64(), Pid = pid, Title = title, Class = cls, X = r.L, Y = r.T, W = r.R - r.L, H = r.B - r.T });
+      return true;
+    }, IntPtr.Zero);
+    return list;
+  }
+
+  // Every display's rectangle, exactly (Electron's can be a pixel too big, from
+  // rounding its scaled size).
+  public static List<int[]> Monitors() {
+    var list = new List<int[]>();
+    EnumDisplayMonitors(IntPtr.Zero, IntPtr.Zero, (m, dc, r, p) => {
+      var i = new MONITORINFO(); i.Size = Marshal.SizeOf(typeof(MONITORINFO));
+      if (GetMonitorInfo(m, ref i)) list.Add(new[] { i.Monitor.L, i.Monitor.T, i.Monitor.R - i.Monitor.L, i.Monitor.B - i.Monitor.T });
       return true;
     }, IntPtr.Zero);
     return list;
@@ -179,6 +196,7 @@ function Get-Snapshot {
   [ordered]@{
     foreground = if ($front) { $front.Hwnd } else { 0 }
     windows = @($wins | ForEach-Object { [ordered]@{ hwnd = $_.Hwnd; pid = $_.Pid; title = $_.Title; x = $_.X; y = $_.Y; w = $_.W; h = $_.H } })
+    monitors = @([SnapNative]::Monitors() | ForEach-Object { [ordered]@{ x = $_[0]; y = $_[1]; w = $_[2]; h = $_[3] } })
   }
 }
 

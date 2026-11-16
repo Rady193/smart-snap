@@ -2,7 +2,7 @@
 
 Smart Snap takes screenshots that remember where they came from. Each snap records the application it was taken from, the window title and, for web browsers, the address of the page. Add a comment, mark a spot, and turn all your snaps into one PDF report.
 
-Version 1.1.4 · Windows 10 and 11 (64-bit) · Published by SCAFFApps
+Version 1.1.5 · Windows 10 and 11 (64-bit) · Published by SCAFFApps
 
 The **[handbook](Smart%20Snap%20Handbook.pdf)** explains everything, with pictures.
 
@@ -24,7 +24,7 @@ The **[handbook](Smart%20Snap%20Handbook.pdf)** explains everything, with pictur
 
 ## Install
 
-Download `Smart-Snap-Setup-1.1.4.exe` from the [Releases page](https://github.com/Rady193/smart-snap/releases/latest) and run it, or install it from the **SCAFFApps Suite**. It installs for everyone on the computer, in `C:\Program Files\SCAFFApps\Smart Snap` unless you choose another folder, so Windows asks for administrator permission once. It adds a desktop shortcut and a Start menu shortcut in the **SCAFFApps** folder, and can be removed from Windows Settings. A copy installed by an earlier version in `C:\Program Files\Smart Snap` moves to the SCAFFApps folder when it updates.
+Download `Smart-Snap-Setup-1.1.5.exe` from the [Releases page](https://github.com/Rady193/smart-snap/releases/latest) and run it, or install it from the **SCAFFApps Suite**. It installs for everyone on the computer, in `C:\Program Files\SCAFFApps\Smart Snap` unless you choose another folder, so Windows asks for administrator permission once. It adds a desktop shortcut and a Start menu shortcut in the **SCAFFApps** folder, and can be removed from Windows Settings. A copy installed by an earlier version in `C:\Program Files\Smart Snap` moves to the SCAFFApps folder when it updates.
 
 Since 1.1.0 Smart Snap is installed, not portable. A portable copy from before cannot update itself to it: install it with the installer once, then delete the portable file.
 
@@ -47,7 +47,7 @@ The first SCAFFApps app to start on a Windows account asks for your **name** and
 1. Open Smart Snap. It also puts an icon in the tray, next to the clock.
 2. Go to the program or web page you want to capture.
 3. Press **Ctrl + Alt + S** and drag over the part of the screen you want, or click a window to take all of it.
-4. A box opens beside the area: type what the reader should notice and press **Ctrl + Enter**. To also mark a spot on the picture, choose **Save and open** instead, then click or drag on the picture in Smart Snap.
+4. A box opens beside the area: type what the reader should notice and press **Enter** (**Shift + Enter** starts a new line). To also mark a spot on the picture, choose **Save and open** instead, then click or drag on the picture in Smart Snap.
 5. Repeat for as many snaps as you need.
 6. Press **Create PDF report**.
 
@@ -65,7 +65,7 @@ The same three are buttons at the top of the Smart Snap window and items in the 
 
 **The comment box.** Once an area is chosen, it stays outlined and a box beside it asks for the snap's comment, as Multi Screens asks for a note's. The picture is already taken: the box and the dimming are not in it. Type, then:
 
-- **Save** (or **Ctrl + Enter**) keeps the snap with its comment. Smart Snap stays out of the way, so you can go straight on to the next snap; the snap is in its list.
+- **Save** (or **Enter**; **Shift + Enter** starts a new line) keeps the snap with its comment. Smart Snap stays out of the way, so you can go straight on to the next snap; the snap is in its list.
 - **Save and open** keeps it and opens Smart Snap on it, to mark a spot or an area on the picture.
 - **Discard** (or **Esc**) throws the snap away.
 
@@ -117,7 +117,7 @@ The report is A4, with numbered pages. It contains:
 
 After it is created, choose **Open** or **Show in folder**. Reports are saved in the `Reports` folder.
 
-**Copy as picture**, in the same window, puts the whole report on the clipboard as one tall picture instead, to paste into a chat, an email or a document. It uses the title and name typed above, saves nothing, and keeps the screenshots in Smart Snap whatever **Keep the screenshots** says, so you can still create the PDF afterwards. A very long report is drawn smaller so it fits in one picture.
+**Copy as picture**, in the same window and in the bar beside **Create PDF report**, puts the whole report on the clipboard as one tall picture instead, to paste into a chat, an email or a document. It uses the title and name typed in the form (the last ones typed, from the bar), saves nothing, and keeps the screenshots in Smart Snap whatever **Keep the screenshots** says, so you can still create the PDF afterwards. A very long report is drawn smaller so it fits in one picture.
 
 ## Updates
 

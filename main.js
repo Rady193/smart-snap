@@ -198,26 +198,60 @@ const overlapArea = (a, b) => {
 };
 const winRect = (w) => ({ x: w.x, y: w.y, width: w.w, height: w.h });
 
-// A picture of every display, at its full resolution.
-async function captureDisplays() {
-  const displays = screen.getAllDisplays();
-  const size = { width: 1, height: 1 };
-  for (const d of displays) {
-    size.width = Math.max(size.width, Math.round(d.size.width * d.scaleFactor));
-    size.height = Math.max(size.height, Math.round(d.size.height * d.scaleFactor));
+// A display's exact physical rectangle: the helper's (`monitors`, from the
+// snapshot) that matches it. Electron's own can be a pixel too big, from
+// rounding a scaled size (2560 x 1600 at 150% comes back as 2561 x 1601).
+function exactPhys(d, monitors) {
+  const p = physicalBounds(d);
+  const m = (monitors || []).find((r) => Math.abs(r.x - p.x) <= 2 && Math.abs(r.y - p.y) <= 2
+    && Math.abs(r.w - p.width) <= 3 && Math.abs(r.h - p.height) <= 3);
+  return m ? { x: m.x, y: m.y, width: m.w, height: m.h }
+    : { x: Math.round(p.x), y: Math.round(p.y), width: Math.round(p.width), height: Math.round(p.height) };
+}
+
+// A picture of each display (or of those in `only`, display ids) at its own
+// resolution, never resized: desktopCapturer fits every display into one size,
+// which stretched the others slightly, so each size is asked for on its own.
+async function captureDisplays(monitors, only) {
+  const all = screen.getAllDisplays();
+  const groups = new Map();
+  for (const d of all) {
+    if (only && !only.includes(d.id)) continue;
+    const phys = exactPhys(d, monitors);
+    const key = `${phys.width}x${phys.height}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push({ d, phys });
   }
-  const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: size });
-  return displays.map((d, i) => {
-    const source = sources.find((s) => s.display_id === String(d.id)) || sources[i];
-    const phys = physicalBounds(d);
-    let image = source ? source.thumbnail : null;
-    // Thumbnails are scaled to fit the largest display; a smaller display's
-    // picture is brought back to its own pixel size.
-    if (image && !image.isEmpty() && image.getSize().width > phys.width + 1) {
-      image = image.resize({ width: Math.round(phys.width), height: Math.round(phys.height), quality: 'best' });
+  const shots = [];
+  for (const group of groups.values()) {
+    const { width, height } = group[0].phys;
+    const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width, height } });
+    for (const { d, phys } of group) {
+      const source = sources.find((s) => s.display_id === String(d.id)) || sources[all.indexOf(d)];
+      let image = source ? source.thumbnail : null;
+      if (!image || image.isEmpty()) continue;
+      const size = image.getSize();
+      if (size.width !== width || size.height !== height) image = image.resize({ width, height, quality: 'best' });
+      shots.push({ display: d, phys, image });
     }
-    return { display: d, phys, image };
-  }).filter((s) => s.image && !s.image.isEmpty());
+  }
+  return all.map((d) => shots.find((s) => s.display.id === d.id)).filter(Boolean);
+}
+
+// The displays a snap needs: the one under the mouse for the full screen, the
+// one showing most of the window in front for a window; all for a frozen area.
+function displaysFor(mode, snapshot) {
+  const monitors = snapshot && snapshot.monitors;
+  if (mode === 'full') return [screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).id];
+  if (mode === 'window') {
+    const w = (snapshot && snapshot.windows || []).find((x) => x.hwnd === snapshot.foreground);
+    if (!w) return null;
+    const best = screen.getAllDisplays()
+      .map((d) => ({ id: d.id, area: overlapArea(winRect(w), exactPhys(d, monitors)) }))
+      .sort((a, b) => b.area - a.area)[0];
+    return best && best.area > 0 ? [best.id] : null;
+  }
+  return null;
 }
 
 // Cuts a physical-pixel rectangle out of one display's picture.
@@ -249,15 +283,18 @@ function windowAt(snapshot, x, y) {
 // taken beforehand. A window on top closes open menus and hover effects, so
 // the delay that is there for snapping those freezes the screen first.
 //
-// Once the picture is taken, the chosen display's window stays, the area still
-// outlined, and asks for the snap's comment in a box beside it (askComment), as
-// Multi Screens asks for a note's.
+// The chosen display's window then stays, the area still outlined, and asks
+// for the snap's comment in a box beside it, as Multi Screens asks for a
+// note's. The box opens the moment the area is chosen; the picture is taken
+// meanwhile, the box left out of it, and the answer waits for it if need be.
 let overlays = [];
-let overlayDone = null;   // the selection, while it is being made
-let commentDone = null;   // the comment box, while it is open
+let overlayDone = null;     // the selection, while it is being made
+let commentDone = null;     // the comment box, while it is open
+let commentAnswer = null;   // what the box answers (a promise), from the moment it opens
 
 // Windows 10 2004 and later leave a window out of pictures of the screen
-// altogether; before that it would show black, so it is hidden instead.
+// altogether; before that it would show black, so it is hidden instead (and
+// the box waits for the picture, not to blink).
 const LEFT_OUT_OF_CAPTURE = process.platform === 'win32' && Number(os.release().split('.')[2]) >= 19041;
 
 function endOverlays() {
@@ -267,8 +304,23 @@ function endOverlays() {
   globalShortcut.unregister('Enter');
 }
 
+// Opens the comment box on overlay `o`, with the keyboard (which a live
+// selection never took).
+function openComment(o, area) {
+  commentAnswer = new Promise((resolve) => { commentDone = resolve; });
+  if (o.live) {
+    try { o.win.setFocusable(true); } catch { /* typing may need a click first */ }
+    o.win.setSkipTaskbar(true);              // (taking the keyboard would give it a taskbar button)
+  }
+  o.win.webContents.send('overlay-comment', { area, number: o.number });
+  o.win.show();
+  o.win.focus();
+  o.win.webContents.focus();
+  if (o.live) o.win.setContentProtection(true);
+}
+
 // Ends the selection: `null` cancels and closes everything; a chosen area keeps
-// its display's window for the comment.
+// its display's window, which asks for the comment at once.
 function closeOverlays(result) {
   const done = overlayDone;
   overlayDone = null;
@@ -277,6 +329,8 @@ function closeOverlays(result) {
     for (const o of overlays) if (o.display.id !== result.displayId && !o.win.isDestroyed()) o.win.destroy();
     overlays = overlays.filter((o) => o.display.id === result.displayId);
     globalShortcut.unregister('Enter');      // Enter is typed in the comment now
+    const o = overlays[0];
+    if (o && (!o.live || LEFT_OUT_OF_CAPTURE)) openComment(o, { x: result.x, y: result.y, w: result.w, h: result.h });
   }
   if (done) done(result);
 }
@@ -295,20 +349,14 @@ function escape() {
   else endOverlays();
 }
 
-// Asks for the comment of snap `number` beside `area` (CSS pixels of the
-// display). Resolves to { action: "save" | "open" | "discard", text }.
-function askComment(displayId, area, number) {
+// The comment for the snap just taken: { action: "save" | "open" | "discard",
+// text }. Opens the box now if it could not open with the selection.
+function askComment(displayId, area) {
+  if (commentAnswer) return commentAnswer;
   const o = overlays.find((x) => x.display.id === displayId && !x.win.isDestroyed());
   if (!o) return Promise.resolve({ action: 'open', text: '' });
-  return new Promise((resolve) => {
-    commentDone = resolve;
-    // The box needs the keyboard, which a live selection never took.
-    if (o.live) { try { o.win.setFocusable(true); } catch { /* typing may need a click first */ } }
-    o.win.show();
-    o.win.focus();
-    o.win.webContents.focus();
-    o.win.webContents.send('overlay-comment', { area, number });
-  });
+  openComment(o, area);
+  return commentAnswer;
 }
 
 // The application's name, once it is known, for the comment box's heading.
@@ -344,8 +392,9 @@ function takeWholeDisplay() {
 // `screens`: [{ display, phys, image }], the image only for a frozen
 // selection. `snapshot`: the windows on screen, or a promise of them (live:
 // the outlines appear when it is ready). Resolves to the chosen area in the
-// display's CSS pixels with its `displayId`, or null.
-function selectArea(screens, snapshot, live) {
+// display's CSS pixels with its `displayId`, or null. `number`: the snap's
+// number, for the comment box.
+function selectArea(screens, snapshot, live, number) {
   return new Promise((resolve) => {
     overlayDone = resolve;
     // Esc and Enter work without the keyboard; a live selection never has it.
@@ -364,19 +413,17 @@ function selectArea(screens, snapshot, live) {
       });
       win.setAlwaysOnTop(true, 'screen-saver');
       win.setBounds(d.bounds);
-      // Never in a picture of the screen, even if it has not quite gone yet.
-      if (live) win.setContentProtection(true);
       win.loadFile(path.join(__dirname, 'app', 'overlay.html'));
       win.webContents.once('did-finish-load', () => {
         win.webContents.send('overlay-image', {
           // JPEG is quick to encode; the snap itself is cut from the original.
           src: s.image ? 'data:image/jpeg;base64,' + s.image.toJPEG(94).toString('base64') : null,
-          scale: s.phys.width / d.bounds.width,
+          scale: d.scaleFactor,
           windows: live ? [] : outlinesOn(snapshot, d, s.phys),
           theme: TITLE_BAR[loadSettings().appTheme] ? loadSettings().appTheme : 'dark',
         });
       });
-      return { win, display: d, live, cursorHere: contains(d.bounds, cursor.x, cursor.y) };
+      return { win, display: d, live, number, cursorHere: contains(d.bounds, cursor.x, cursor.y) };
     });
     if (live) {
       Promise.resolve(snapshot).then((snap) => {
@@ -393,7 +440,13 @@ function selectArea(screens, snapshot, live) {
 ipcMain.on('overlay-ready', (event) => {
   const o = overlays.find((x) => !x.win.isDestroyed() && x.win.webContents === event.sender);
   if (!o) return;
-  if (o.live) { o.win.showInactive(); return; }
+  if (o.live) {
+    o.win.showInactive();
+    // Never in the picture of the screen. Windows ignores this for a window
+    // that is not shown yet, so it is set once the window is on screen.
+    o.win.setContentProtection(true);
+    return;
+  }
   o.win.show();
   if (o.cursorHere) o.win.focus();
 });
@@ -524,21 +577,23 @@ async function snap(mode, wait = 0) {
     let picked = null;
     if (live) {
       const screens = screen.getAllDisplays().map((d) => ({ display: d, phys: physicalBounds(d), image: null }));
-      picked = await selectArea(screens, snapshot, true);
+      picked = await selectArea(screens, snapshot, true, readSnaps().length + 1);
       if (!picked) { if (hidOwn) showMain(); return; }
+      snapshot = await snapshot;
+      // Only the display the area is on.
+      const only = [picked.displayId];
       if (LEFT_OUT_OF_CAPTURE) {
-        shots = await captureDisplays();
+        shots = await captureDisplays(snapshot && snapshot.monitors, only);
       } else {
         // Hidden for the picture, the screen drawn again without it, then back.
         for (const o of overlays) o.win.hide();
         await delay(120);
-        shots = await captureDisplays();
-        for (const o of overlays) if (!o.win.isDestroyed()) o.win.showInactive();
+        shots = await captureDisplays(snapshot && snapshot.monitors, only);
+        for (const o of overlays) if (!o.win.isDestroyed()) { o.win.showInactive(); o.win.setContentProtection(true); }
       }
-      snapshot = await snapshot;
     } else {
       snapshot = await snapshot;
-      shots = await captureDisplays();
+      shots = await captureDisplays(snapshot && snapshot.monitors, displaysFor(mode, snapshot));
     }
     if (!shots.length) throw new Error('Windows did not hand over a picture of the screen.');
     const all = screen.getAllDisplays();
@@ -549,11 +604,11 @@ async function snap(mode, wait = 0) {
     let displayName = '';
 
     if (mode === 'area') {
-      if (!live) picked = await selectArea(shots, snapshot, false);
+      if (!live) picked = await selectArea(shots, snapshot, false, readSnaps().length + 1);
       if (!picked) { if (hidOwn) showMain(); return; }
       const shot = shots.find((s) => s.display.id === picked.displayId);
       if (!shot) throw new Error('That display could not be snapped. Try again.');
-      const k = shot.phys.width / shot.display.bounds.width;
+      const k = shot.display.scaleFactor;     // the selection's CSS pixels are the display's DIPs
       const rect = {
         x: shot.phys.x + picked.x * k, y: shot.phys.y + picked.y * k,
         width: picked.w * k, height: picked.h * k,
@@ -586,7 +641,6 @@ async function snap(mode, wait = 0) {
 
     // The snap is stored while its comment is asked: its application is looked
     // up meanwhile, and named in the comment box once known.
-    const number = readSnaps().length + 1;
     const storing = (async () => {
       const info = hwnd ? await ask(`info ${hwnd}`) : null;
       return storeSnap(image, mode, info && !info.error ? info : null, displayName);
@@ -598,7 +652,7 @@ async function snap(mode, wait = 0) {
       return;
     }
     storing.then((s) => tellCommentApp(s.app.name), () => {});
-    const answer = await askComment(picked.displayId, { x: picked.x, y: picked.y, w: picked.w, h: picked.h }, number);
+    const answer = await askComment(picked.displayId, { x: picked.x, y: picked.y, w: picked.w, h: picked.h });
     const saved = await storing;
     if (answer.action === 'discard') {
       writeSnaps(readSnaps().filter((n) => n.id !== saved.id));
@@ -622,6 +676,7 @@ async function snap(mode, wait = 0) {
     notify('snap-error', String(err && err.message || err));
   } finally {
     commentDone = null;
+    commentAnswer = null;
     endOverlays();
     snapping = false;
   }

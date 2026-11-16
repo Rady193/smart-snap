@@ -34,7 +34,7 @@
     <button class="snapbtn" data-mode="window" title="The window you were using before this one"><svg class="icon"><use href="#i-window"/></svg>Window<kbd data-key="window"></kbd></button>
     <button class="snapbtn" data-mode="full" title="The whole display the mouse is on"><svg class="icon"><use href="#i-full"/></svg>Full screen<kbd data-key="full"></kbd></button>
   </div>
-  <label class="delay">Delay
+  <label class="delay" title="Wait before taking the snap"><span class="word">Delay</span>
     <select id="delay">
       <option value="0">None</option>
       <option value="3">3 s</option>
@@ -43,6 +43,7 @@
     </select>
   </label>
   <div class="spacer"></div>
+  <button id="copy-report-btn" disabled title="Copy the whole report to the clipboard as one picture, to paste into a chat, an email or a document. The screenshots stay in Smart Snap."><svg class="icon"><use href="#i-copy"/></svg><span>Copy as picture</span></button>
   <button id="report-btn" class="primary" disabled><svg class="icon"><use href="#i-pdf"/></svg>Create PDF report<span class="count" id="count"></span></button>
   <button id="folder-btn" class="icon-btn" title="Open the output folder"><svg class="icon"><use href="#i-folder"/></svg></button>
   <button id="settings-btn" class="icon-btn" title="Settings"><svg class="icon"><use href="#i-settings"/></svg></button>

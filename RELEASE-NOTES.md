@@ -1,5 +1,41 @@
 # Release notes
 
+## 1.1.5 — 16 November 2026
+
+Enter saves the comment, the comment box opens at once, Copy as picture in the bar, and sharper snaps.
+
+### Downloads
+
+| File | Size | SHA-256 |
+|---|---|---|
+| `Smart-Snap-Setup-1.1.5.exe` | 78.0 MB | `BDA944D3A875EB3C11729CBFC4620DE1E0E4A56040FDFA985C05A43451724378` |
+| `Smart-Snap-Handbook-1.1.5.pdf` | 3.6 MB | `EE0A9408B5769103EDFF092E91D7E2B1CB9A202A983031068F8CFDA19565D725` |
+
+For 64-bit Windows 10 and 11. Not code-signed, so Windows SmartScreen may ask for confirmation on first run.
+
+### Changed
+
+- **Enter saves the comment**; Shift + Enter starts a new line.
+- **The comment box opens the moment you let go** of the mouse (it waited about half a second for the picture before); the picture is taken meanwhile.
+- **Copy as picture in the bar**, beside Create PDF report: the whole report on the clipboard as one picture, with the title and name last typed in the report form.
+- **A narrow window**: the bar's shortcut labels make way first, then Copy as picture keeps only its icon, so the bar fits down to the smallest window.
+
+### Fixed
+
+- **A faint light edge around area snaps** (1.1.4): the selection, meant to be left out of the picture, was not, because Windows ignores that setting for a window not yet on screen. It is now set once the window shows.
+- **Slightly stretched snaps on a scaled display**: a 2560 × 1600 display at 150% came out 2562 × 1601, a little soft, because every display was captured at one shared size and Electron rounds a scaled size. Each display is now captured at its own exact size, and only the display being snapped.
+
+### Updating from 1.1.4
+
+- Settings > Updates > **Update now**, or **Update** in the SCAFFApps Suite.
+
+### Tested
+
+- The packaged app on two displays (2560 × 1600 at 150% and 3440 × 1440), each covered by a test window of coded colours: a live area, a frozen area and a full-screen snap on each were exact, pixel for pixel, with nothing of the selection or the comment box in them.
+- With the real mouse and keyboard on both displays: a comment typed over two lines (Shift + Enter) and saved with Enter; the box appeared about 20 ms after the release.
+- Copy as picture, from the bar and from the report form; Create report.
+- Microsoft Defender finds nothing in the installer.
+
 ## 1.1.4 — 16 November 2026
 
 Write the comment right beside the area you snap, as in Multi Screens.
