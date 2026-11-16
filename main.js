@@ -948,7 +948,7 @@ ipcMain.handle('set-theme', (event, theme) => {
 
 ipcMain.handle('config', async () => ({
   shortcuts: SHORTCUTS,
-  shortcutProblems: shortcutProblems,
+  shortcutProblems: printScreenState === 'held' ? [...shortcutProblems, PRINT_SCREEN] : shortcutProblems,
   printScreen: { on: loadSettings().printScreen !== false, windowsTakesIt: await windowsTakesPrintScreen() },
   pinned: !!loadSettings().pinned,
   author: loadSettings().author || '',
@@ -1495,11 +1495,69 @@ function registerShortcuts() {
     try { ok = globalShortcut.register(keys, () => snap(mode)); } catch { ok = false; }
     if (!ok) shortcutProblems.push(keys);
   }
-  if (loadSettings().printScreen !== false) {
-    let ok = false;
-    try { ok = globalShortcut.register(PRINT_SCREEN, () => snap('area')); } catch { ok = false; }
-    if (!ok) shortcutProblems.push(PRINT_SCREEN);
-  }
+  if (loadSettings().printScreen !== false) { printScreenRetries = 0; startPrintScreen(); }
+  else stopPrintScreen();
+}
+
+// ---- The Print Screen key -----------------------------------------------------
+// Electron takes "PrintScreen" as a shortcut and says it is registered, but never
+// asks Windows for the key, so it never fires. printscreen.ps1 claims it from
+// Windows instead and says "ready", "held" (another program has it) or "pressed".
+// It ends with Smart Snap, when its input closes, and Windows gives the key back.
+let printScreenHelper = null;
+let printScreenState = 'off';     // off, starting, ready, held
+let printScreenRetries = 0;
+
+function startPrintScreen() {
+  if (process.platform !== 'win32' || printScreenHelper) return;   // already has the key, or is asking for it
+  // PowerShell cannot read a script from inside the app's archive (see startHelper).
+  const script = path.join(app.getPath('userData'), 'printscreen.ps1');
+  try {
+    fs.mkdirSync(path.dirname(script), { recursive: true });
+    fs.writeFileSync(script, fs.readFileSync(path.join(__dirname, 'printscreen.ps1')));
+  } catch { return; }
+  const child = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', script], {
+    windowsHide: true,
+    stdio: ['pipe', 'pipe', 'ignore'],
+  });
+  printScreenHelper = child;
+  printScreenState = 'starting';
+  let buffer = '';
+  child.stdout.setEncoding('utf8');
+  child.stdout.on('data', (chunk) => {
+    buffer += chunk;
+    let i;
+    while ((i = buffer.indexOf('\n')) >= 0) {
+      const line = buffer.slice(0, i).trim();
+      buffer = buffer.slice(i + 1);
+      if (printScreenHelper !== child) return;
+      if (line === 'ready') { printScreenState = 'ready'; printScreenRetries = 0; }
+      else if (line === 'held') printScreenState = 'held';
+      else if (line === 'pressed') snap('area');
+    }
+  });
+  child.on('error', () => {});
+  child.on('exit', () => {
+    if (printScreenHelper !== child) return;
+    printScreenHelper = null;
+    if (printScreenState !== 'held') printScreenState = 'off';
+    // Held by another program (an older copy still closing after an update), or
+    // ended unexpectedly: asked again a few times, while the key is wanted.
+    if (!quitting && loadSettings().printScreen !== false && printScreenRetries < 3) {
+      printScreenRetries++;
+      setTimeout(() => { if (!printScreenHelper && !quitting && loadSettings().printScreen !== false) startPrintScreen(); }, 4000);
+    }
+  });
+}
+
+function stopPrintScreen() {
+  const child = printScreenHelper;
+  printScreenHelper = null;
+  printScreenState = 'off';
+  printScreenRetries = 0;
+  if (!child) return;
+  try { child.stdin.end(); } catch { /* already gone */ }
+  setTimeout(() => { try { child.kill(); } catch { /* already gone */ } }, 1500);
 }
 
 // Windows 11 can send the Print Screen key to its Snipping Tool before any app
@@ -1537,6 +1595,7 @@ if (app.hasSingleInstanceLock()) {
 app.on('before-quit', () => { quitting = true; });
 app.on('will-quit', () => {
   globalShortcut.unregisterAll();
+  stopPrintScreen();
   if (helper) { try { helper.stdin.write('quit\n'); } catch { /* already gone */ } helper.kill(); }
 });
 // The tray keeps the app running when its window is closed.
