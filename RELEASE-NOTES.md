@@ -1,5 +1,45 @@
 # Release notes
 
+## 1.2.3 — 16 November 2026
+
+Enter copies the snap as a picture, and the report's pictures stay inside their cards.
+
+### Downloads
+
+| File | Size | SHA-256 |
+|---|---|---|
+| `Smart-Snap-Setup-1.2.3.exe` | 71.1 MB | `9E7E89C985BF7A3AEB5744696F6E04979546C63C812B505056AD3FE34621312D` |
+| `Smart-Snap-Handbook-1.2.3.pdf` | 3.7 MB | `13914E3C59889D35EEF96178FFA1D8D8FC8B51AFC858655131888827603F66C2` |
+
+For 64-bit Windows 10 and 11. Not code-signed, so Windows SmartScreen may ask for confirmation on first run.
+
+### New
+
+- **Enter in the comment box also copies the snap as a picture.** Enter (or Save) keeps the snap with its comment, as before, and puts that one snap on the clipboard as a picture: its part of the report alone (number, application, comment, screenshot, close-up and details), ready to paste into a chat, an email or a document. It is there about a second later; the next snap can start at once, and when several are saved one after another the last one saved is left on the clipboard. The box says so ("Enter saves and copies it as a picture"), and Smart Snap's window, when it is open, says "Snap N copied as a picture". **Save and open** and **Discard** copy nothing.
+
+### Fixed
+
+- **A wide screenshot no longer runs past the right edge of its card** in the PDF report and in Copy as picture. Screenshots are drawn at most 171 mm wide, the room inside the card; wide ones are about 6% smaller than in 1.2.2, small ones are unchanged.
+
+### Changed
+
+- **Copy as picture** in the bar and in the report form still copies the whole report, every snap.
+- **The handbook**, `Smart-Snap-Handbook-1.2.3.pdf`: Enter in the comment box, and the report pages and the comment box pictured again.
+
+### Updating from 1.2.2 or earlier
+
+- Settings > Updates > **Update now**, or **Update** in the SCAFFApps Suite.
+
+### Tested
+
+- The one-snap picture and the whole report's picture drawn by Smart Snap's own report code from sample snaps: the one-snap picture holds that snap alone, as tall as its card; a snap removed before its turn copies nothing; the whole report copied twice in a row gives the same picture both times; the PDF's pages keep every screenshot inside its card.
+- Installed over 1.2.2 on a working computer the way the SCAFFApps Suite updates it (silently, with Windows' permission): Windows lists 1.2.3, Smart Snap opened again and holds the Print Screen key.
+- Microsoft Defender finds nothing in the installer.
+
+### Not tested
+
+- **Enter pressed in the comment box after a real snap** was not driven by a test (tests never snap the screen of the computer they run on); it saves through the same path as before, then draws the picture tested above.
+
 ## 1.2.2 — 16 November 2026
 
 In step with the other SCAFFApps apps: Quit Smart Snap, and the keyboard's place shown.

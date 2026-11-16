@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('smartSnap', {
   snap: (mode, wait) => ipcRenderer.invoke('snap', mode, wait),
   onChanged: (callback) => ipcRenderer.on('snaps-changed', (_e, info) => callback(info)),
   onError: (callback) => ipcRenderer.on('snap-error', (_e, message) => callback(message)),
+  onCopied: (callback) => ipcRenderer.on('snap-copied', (_e, info) => callback(info)),
   snaps: {
     list: () => ipcRenderer.invoke('snaps-list'),
     update: (id, change) => ipcRenderer.invoke('snaps-update', id, change),

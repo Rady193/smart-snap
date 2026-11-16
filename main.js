@@ -675,6 +675,9 @@ async function snap(mode, wait = 0) {
       const n = list.find((x) => x.id === saved.id);
       if (n) { n.text = answer.text; writeSnaps(list); }
     }
+    // Saved with Enter (or Save): this snap alone goes on the clipboard as a
+    // picture, drawn meanwhile, so the next snap can start at once.
+    if (answer.action === 'save') queueSnapPicture(saved.id);
     // Saved from the box, Smart Snap stays out of the way, unless asked to open
     // or the snap was started from its own window.
     notify('snaps-changed', { select: saved.id, fresh: answer.action === 'open' });
@@ -734,10 +737,11 @@ function linkHtml(url) {
 function snapHtml(n, number) {
   const src = pathToFileURL(snapImage(n.id)).href;
   const a = n.app || {};
-  // A4 with 14 mm margins leaves 182 mm across; the picture is kept short
+  // A4 with 14 mm margins leaves 182 mm across, and the snap's card (5 mm
+  // padding and a border each side) 171 mm inside it; the picture is kept short
   // enough for the snap and its details to share a page.
   const ratio = n.imgW / n.imgH;
-  let w = 182; let h = w / ratio;
+  let w = 171; let h = w / ratio;
   if (h > 150) { h = 150; w = h * ratio; }
   // Small snaps are not blown up beyond about their size on screen.
   const naturalW = n.imgW * 0.2;
@@ -770,6 +774,8 @@ function snapHtml(n, number) {
 
 // `opts.picture`: drawn for one tall picture instead of printed pages. The page
 // then keeps the A4 width and its margins itself, on white, without a scrollbar.
+// `opts.single`: one snap's part alone, without the report's heading and
+// summary, numbered `opts.number` as in the list.
 function reportHtml(list, opts) {
   const apps = [...new Set(list.map((n) => (n.app && (n.app.name || n.app.process)) || 'Unknown'))];
   const summary = list.map((n, i) => {
@@ -824,8 +830,9 @@ function reportHtml(list, opts) {
   .mark span { display: inline-grid; place-items: center; min-width: 5mm; height: 5mm; padding: 0 1mm; color: #fff; background: #e5484d; border-radius: 2.5mm; font-size: 8pt; font-weight: 700; line-height: 1; }
   .mark.point span { position: absolute; left: 3mm; top: -8mm; }
   ${opts.picture ? 'html { background: #fff; scrollbar-width: none; } body { padding: 12mm 14mm 9mm; } .snap:last-child { margin-bottom: 0; }' : ''}
+  ${opts.single ? 'body { padding: 6mm 8mm; }' : ''}
 </style></head><body>
-<header>
+${opts.single ? snapHtml(list[0], opts.number || 1) : `<header>
   <div class="brand"><img src="${pathToFileURL(ICON).href}" alt="">${APP_NAME}</div>
   <h1>${esc(opts.title)}</h1>
   <div class="cards">
@@ -836,7 +843,7 @@ function reportHtml(list, opts) {
   </div>
   <table class="sum"><tr><th>#</th><th>Application</th><th>Page, window or folder</th><th>Time</th></tr>${summary}</table>
 </header>
-${list.map((n, i) => snapHtml(n, i + 1)).join('')}
+${list.map((n, i) => snapHtml(n, i + 1)).join('')}`}
 </body></html>`;
 }
 
@@ -856,7 +863,9 @@ function reportInput(opts) {
 // to `use`, and closes it. A picture needs the window drawn off screen: Chromium
 // does not paint a hidden window, so there would be nothing to capture.
 async function withReportPage(list, opts, use) {
-  const htmlFile = path.join(snapsDir(), opts.picture ? 'report-picture.html' : 'report.html');
+  // A picture's page has a name of its own: one snap's picture may still be
+  // drawing while the next one, or the whole report's, starts.
+  const htmlFile = path.join(snapsDir(), opts.picture ? `picture-${crypto.randomUUID()}.html` : 'report.html');
   let win;
   try {
     fs.writeFileSync(htmlFile, reportHtml(list, opts));
@@ -911,29 +920,57 @@ const PICTURE_MAX_H = 16000; // in pixels; Chromium cannot capture much taller
 const withTimeout = (promise, ms) =>
   Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error('timed out')), ms))]);
 
+// The report's page (`opts` as for reportHtml, `picture` added) as one picture.
+async function reportPicture(list, opts) {
+  const image = await withReportPage(list, { ...opts, picture: true }, async (wc) => {
+    wc.debugger.attach('1.3');
+    const send = (method, params) => wc.debugger.sendCommand(method, params);
+    const metrics = (height, deviceScaleFactor) =>
+      send('Emulation.setDeviceMetricsOverride', { width: PICTURE_W, height, deviceScaleFactor, mobile: false });
+    // Measured in a short view: the content is never counted shorter than the
+    // view, and one snap alone can be shorter than a tall one.
+    await metrics(100, 1);
+    const { cssContentSize } = await send('Page.getLayoutMetrics');
+    const height = Math.ceil(cssContentSize.height);
+    await metrics(height, Math.min(2, PICTURE_MAX_H / height));
+    // Closing the window (on a timeout) ends a capture that never finishes.
+    const { data } = await withTimeout(send('Page.captureScreenshot', { format: 'png' }), 20000);
+    return nativeImage.createFromBuffer(Buffer.from(data, 'base64'));
+  });
+  if (image.isEmpty()) throw new Error('empty picture');
+  return image;
+}
+
 async function copyReport(opts) {
   const { list, title, author } = reportInput(opts);
   if (!list.length) return { error: 'There are no screenshots to report.' };
   try {
-    const image = await withReportPage(list, { title, author, picture: true }, async (wc) => {
-      wc.debugger.attach('1.3');
-      const send = (method, params) => wc.debugger.sendCommand(method, params);
-      const metrics = (height, deviceScaleFactor) =>
-        send('Emulation.setDeviceMetricsOverride', { width: PICTURE_W, height, deviceScaleFactor, mobile: false });
-      await metrics(1000, 1);
-      const { cssContentSize } = await send('Page.getLayoutMetrics');
-      const height = Math.ceil(cssContentSize.height);
-      await metrics(height, Math.min(2, PICTURE_MAX_H / height));
-      // Closing the window (on a timeout) ends a capture that never finishes.
-      const { data } = await withTimeout(send('Page.captureScreenshot', { format: 'png' }), 20000);
-      return nativeImage.createFromBuffer(Buffer.from(data, 'base64'));
-    });
-    if (image.isEmpty()) throw new Error('empty picture');
+    const image = await reportPicture(list, { title, author });
     clipboard.writeImage(image);
     return { ...image.getSize(), count: list.length };
   } catch (err) {
     return { error: 'The report could not be copied as a picture.' };
   }
+}
+
+// One snap as a picture on the clipboard: its part of the report alone (its
+// number, application, comment, screenshot and details), as it is now. Snaps
+// saved one after another are copied in turn, so the last one saved is the one
+// left on the clipboard. The window, when it is open, says so.
+let snapPictures = Promise.resolve();
+function queueSnapPicture(id) {
+  snapPictures = snapPictures.then(async () => {
+    const list = readSnaps();
+    const i = list.findIndex((n) => n.id === id);
+    if (i < 0 || !fs.existsSync(snapImage(id))) return;      // deleted or reported meanwhile
+    try {
+      const image = await reportPicture([list[i]], { title: APP_NAME, single: true, number: i + 1 });
+      clipboard.writeImage(image);
+      notify('snap-copied', { number: i + 1 });
+    } catch {
+      notify('snap-error', `Snap ${i + 1} is saved, but it could not be copied as a picture. Copy picture in Smart Snap copies its screenshot alone.`);
+    }
+  });
 }
 
 // ---- Interface ----------------------------------------------------------------

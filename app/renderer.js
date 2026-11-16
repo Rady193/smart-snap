@@ -228,6 +228,8 @@ api.onChanged(async (info) => {
   if (info && info.fresh) $('comment').focus();
 });
 api.onError((message) => toast(message, [], true));
+// Saved with Enter in the comment box: that snap alone is on the clipboard.
+api.onCopied((info) => toast(`Snap ${info.number} copied as a picture: paste it into a chat, an email or a document.`));
 
 // ---- Report -------------------------------------------------------------------
 $('report-btn').onclick = () => {
