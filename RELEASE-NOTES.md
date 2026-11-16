@@ -1,5 +1,39 @@
 # Release notes
 
+## 1.2.1 — 16 November 2026
+
+The Print Screen key really snaps an area.
+
+### Downloads
+
+| File | Size | SHA-256 |
+|---|---|---|
+| `Smart-Snap-Setup-1.2.1.exe` | 78.0 MB | `DC4B20973834D8B7EC9C088FAA8DDA9FCEEF6990331B80ACD6C36BAA91BCCE0F` |
+| `Smart-Snap-Handbook-1.2.0.pdf` | 3.6 MB | `F97B9327983889790E71621CC9F6A6700B4FD560B39C927A6D4BE245ABF14D96` |
+
+For 64-bit Windows 10 and 11. Not code-signed, so Windows SmartScreen may ask for confirmation on first run.
+
+### Fixed
+
+- **Print Screen snaps an area.** In 1.2.0 the key did nothing: Electron accepted it as a shortcut but never asked Windows for it. Smart Snap now claims the key from Windows itself, as other screenshot programs do, and gives it back when it quits. If another program has the key, Smart Snap asks for it again a few times (an older copy may still be closing after an update), and Settings names the key as taken.
+
+### Unchanged
+
+- **The handbook** is 1.2.0's, `Smart-Snap-Handbook-1.2.0.pdf`: it already describes Print Screen.
+
+### Updating from 1.2.0 or 1.1.5
+
+- Settings > Updates > **Update now**, or **Update** in the SCAFFApps Suite.
+
+### Tested
+
+- Installed on a working computer: Windows lists 1.2.1, and Smart Snap holds the Print Screen key (Windows gave it the key, and it keeps it while it runs).
+- Microsoft Defender finds nothing in the installer.
+
+### Not tested
+
+- **Print Screen pressed on a keyboard** was not driven by a test: it takes the same path as Ctrl + Alt + S.
+
 ## 1.2.0 — 16 November 2026
 
 Print Screen snaps an area, and a pin keeps the window on top.
