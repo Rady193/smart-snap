@@ -2,7 +2,7 @@
 
 Smart Snap takes screenshots that remember where they came from. Each snap records the application it was taken from, the window title and, for web browsers, the address of the page. Add a comment, mark a spot, and turn all your snaps into one PDF report.
 
-Version 1.1.2 · Windows 10 and 11 (64-bit) · Published by SCAFFApps
+Version 1.1.3 · Windows 10 and 11 (64-bit) · Published by SCAFFApps
 
 The **[handbook](Smart%20Snap%20Handbook.pdf)** explains everything, with pictures.
 
@@ -24,7 +24,7 @@ The **[handbook](Smart%20Snap%20Handbook.pdf)** explains everything, with pictur
 
 ## Install
 
-Download `Smart-Snap-Setup-1.1.2.exe` from the [Releases page](https://github.com/Rady193/smart-snap/releases/latest) and run it, or install it from the **SCAFFApps Suite**. It installs for everyone on the computer, in `C:\Program Files\SCAFFApps\Smart Snap` unless you choose another folder, so Windows asks for administrator permission once. It adds a desktop shortcut and a Start menu shortcut in the **SCAFFApps** folder, and can be removed from Windows Settings. A copy installed by an earlier version in `C:\Program Files\Smart Snap` moves to the SCAFFApps folder when it updates.
+Download `Smart-Snap-Setup-1.1.3.exe` from the [Releases page](https://github.com/Rady193/smart-snap/releases/latest) and run it, or install it from the **SCAFFApps Suite**. It installs for everyone on the computer, in `C:\Program Files\SCAFFApps\Smart Snap` unless you choose another folder, so Windows asks for administrator permission once. It adds a desktop shortcut and a Start menu shortcut in the **SCAFFApps** folder, and can be removed from Windows Settings. A copy installed by an earlier version in `C:\Program Files\Smart Snap` moves to the SCAFFApps folder when it updates.
 
 Since 1.1.0 Smart Snap is installed, not portable. A portable copy from before cannot update itself to it: install it with the installer once, then delete the portable file.
 
@@ -57,15 +57,15 @@ Closing the window does not stop Smart Snap: it keeps running in the tray so the
 
 | Kind | Shortcut | What it takes |
 |---|---|---|
-| Area | Ctrl + Alt + S | The screen freezes and dims. **Drag** to take a rectangle, **click** a window to take that window, **Enter** for the whole display, **Esc** or right-click to cancel. While you move the mouse, the window under it is outlined in gold and its size is shown. |
+| Area | Ctrl + Alt + S | The screen dims but stays live. **Press, drag and release** to take a rectangle; the picture is taken the moment you let go. **Click** a window to take that window, **Enter** for the whole display, **Esc** or right-click to cancel. While you move the mouse, the window under it is outlined in gold and its size is shown. |
 | Window | Ctrl + Alt + W | The window you are using, without its shadow. |
 | Full screen | Ctrl + Alt + F | The whole display the mouse is on. |
 
 The same three are buttons at the top of the Smart Snap window and items in the tray menu. When you use a button, Smart Snap hides itself first, so it takes the window you were using before.
 
-**Delay** (beside the buttons) waits 3, 5 or 10 seconds before taking the snap, so you can open a menu or hover over something first. The tray menu also has **Snap an area in 5 seconds**.
+**Delay** (beside the buttons) waits 3, 5 or 10 seconds before taking the snap, so you can open a menu or hover over something first. The tray menu also has **Snap an area in 5 seconds**. After a delay, an area snap **freezes** the screen before you choose the area, as Windows' own Snipping Tool does: anything placed over the screen closes open menus and hover effects, so this is the way to snap them.
 
-With more than one monitor, every monitor freezes for an area snap and you can drag on any of them. A window spread across two monitors is cut at the edge of the one that shows most of it.
+With more than one monitor, every monitor dims for an area snap and you can drag on any of them. A window spread across two monitors is cut at the edge of the one that shows most of it.
 
 ## What each snap records
 
@@ -108,6 +108,8 @@ The report is A4, with numbered pages. It contains:
 2. One section per snap: the application's icon and name, the window title, your comment, the picture with its mark, a close-up of the marked spot or area, and the details listed under [What each snap records](#what-each-snap-records).
 
 After it is created, choose **Open** or **Show in folder**. Reports are saved in the `Reports` folder.
+
+**Copy as picture**, in the same window, puts the whole report on the clipboard as one tall picture instead, to paste into a chat, an email or a document. It uses the title and name typed above, saves nothing, and keeps the screenshots in Smart Snap whatever **Keep the screenshots** says, so you can still create the PDF afterwards. A very long report is drawn smaller so it fits in one picture.
 
 ## Updates
 
@@ -186,7 +188,7 @@ npm run dist
 | `registration.js`, `registration-preload.js`, `app/registration.html` | The name and e-mail registration, the same files in every SCAFFApps Electron app. |
 | `overlay-preload.js` | The same for the area selection windows. |
 | `app/index.html`, `app/style.css`, `app/renderer.js` | The app window. |
-| `app/overlay.html` | The frozen, dimmed screen on which an area is chosen. |
+| `app/overlay.html` | The dimmed screen on which an area is chosen: see-through over the live screen, or the frozen picture after a delay. |
 | `app/theme-early.js` | Applies the saved light or dark appearance before the window is first drawn. |
 | `handbook/` | `handbook.html`, its pictures, and `build-handbook.js`, which prints it to `Smart Snap Handbook.pdf`: `node_modules\electron\dist\electron.exe handbook\build-handbook.js`. |
 | `build/` | Icon files and the script that draws them, the packaging hook, and `installer.nsh`, the installer page that asks for the output folder and moves an install from the old folder. |

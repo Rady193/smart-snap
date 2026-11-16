@@ -248,6 +248,9 @@ dialog label input[type="text"] { color: var(--text); }
 dialog label.check { flex-direction: row; align-items: center; gap: 8px; color: var(--text); }
 dialog p { margin: 0; }
 dialog .buttons { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+dialog button.copy-picture svg.icon { width: 16px; height: 16px; }
+dialog button.copy-picture:disabled { opacity: .65; cursor: progress; }
+#r-note.done { color: var(--accent); }
 dialog .field { display: flex; flex-direction: column; gap: 6px; }
 dialog .label { color: var(--dim); }
 dialog table.keys { margin: 0; }

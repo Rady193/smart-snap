@@ -237,8 +237,16 @@ function windowAt(snapshot, x, y) {
 }
 
 // ---- Area selection overlay -------------------------------------------------
-// One borderless window per display shows that display's frozen picture. Drag
-// to choose an area, or click a window to take that window. Esc cancels.
+// One borderless window per display. Press, drag and release to choose an area;
+// click a window to take that window; Enter takes the whole display; Esc or a
+// right-click cancels.
+//
+// Live (the usual way): the windows are see-through and never take the
+// keyboard, so the screen goes on moving under them and the program in front
+// stays in front. The picture is taken once the area is chosen, after the
+// windows have gone. Frozen (after a delay): they show each display's picture
+// taken beforehand. A window on top closes open menus and hover effects, so
+// the delay that is there for snapping those freezes the screen first.
 let overlays = [];
 let overlayDone = null;
 
@@ -248,49 +256,77 @@ function closeOverlays(result) {
   for (const o of overlays) if (!o.win.isDestroyed()) o.win.destroy();
   overlays = [];
   globalShortcut.unregister('Escape');
+  globalShortcut.unregister('Enter');
   if (done) done(result);
 }
 
-function selectArea(shots, snapshot) {
+// Window outlines in one display's own coordinates (CSS pixels).
+function outlinesOn(snapshot, d, phys) {
+  const k = d.bounds.width / phys.width;
+  return (snapshot && snapshot.windows || [])
+    .filter((w) => overlapArea(winRect(w), phys) > 0)
+    .map((w) => ({ hwnd: w.hwnd, x: (w.x - phys.x) * k, y: (w.y - phys.y) * k, w: w.w * k, h: w.h * k, title: w.title }));
+}
+
+// The whole display under the mouse.
+function takeWholeDisplay() {
+  const c = screen.getCursorScreenPoint();
+  const o = overlays.find((x) => contains(x.display.bounds, c.x, c.y)) || overlays[0];
+  if (o) closeOverlays({ displayId: o.display.id, x: 0, y: 0, w: o.display.bounds.width, h: o.display.bounds.height });
+}
+
+// `screens`: [{ display, phys, image }], the image only for a frozen
+// selection. `snapshot`: the windows on screen, or a promise of them (live:
+// the outlines appear when it is ready). Resolves to the chosen area in the
+// display's CSS pixels with its `displayId`, or null.
+function selectArea(screens, snapshot, live) {
   return new Promise((resolve) => {
     overlayDone = resolve;
-    // Esc cancels even if no overlay has the keyboard.
+    // Esc and Enter work without the keyboard; a live selection never has it.
     try { globalShortcut.register('Escape', () => closeOverlays(null)); } catch { /* the overlay's own Esc still works */ }
+    try { globalShortcut.register('Enter', takeWholeDisplay); } catch { /* the overlay's own Enter still works */ }
     const cursor = screen.getCursorScreenPoint();
-    overlays = shots.map((shot, index) => {
-      const d = shot.display;
+    overlays = screens.map((s) => {
+      const d = s.display;
       const win = new BrowserWindow({
         x: d.bounds.x, y: d.bounds.y, width: d.bounds.width, height: d.bounds.height,
         frame: false, show: false, resizable: false, movable: false, minimizable: false, maximizable: false,
         fullscreenable: false, skipTaskbar: true, hasShadow: false, enableLargerThanScreen: true,
-        alwaysOnTop: true, backgroundColor: '#000000', title: 'Smart Snap selection',
+        alwaysOnTop: true, title: 'Smart Snap selection',
+        ...(live ? { transparent: true, backgroundColor: '#00000000', focusable: false } : { backgroundColor: '#000000' }),
         webPreferences: { preload: path.join(__dirname, 'overlay-preload.js'), contextIsolation: true, nodeIntegration: false },
       });
       win.setAlwaysOnTop(true, 'screen-saver');
       win.setBounds(d.bounds);
-      // Window outlines in this display's own coordinates (CSS pixels).
-      const k = d.bounds.width / shot.phys.width;
-      const windows = (snapshot && snapshot.windows || [])
-        .filter((w) => overlapArea(winRect(w), shot.phys) > 0)
-        .map((w) => ({ hwnd: w.hwnd, x: (w.x - shot.phys.x) * k, y: (w.y - shot.phys.y) * k, w: w.w * k, h: w.h * k, title: w.title }));
-      win.loadFile(path.join(__dirname, 'app', 'overlay.html'), { query: { index: String(index) } });
+      // Never in a picture of the screen, even if it has not quite gone yet.
+      if (live) win.setContentProtection(true);
+      win.loadFile(path.join(__dirname, 'app', 'overlay.html'));
       win.webContents.once('did-finish-load', () => {
         win.webContents.send('overlay-image', {
           // JPEG is quick to encode; the snap itself is cut from the original.
-          src: 'data:image/jpeg;base64,' + shot.image.toJPEG(94).toString('base64'),
-          windows,
+          src: s.image ? 'data:image/jpeg;base64,' + s.image.toJPEG(94).toString('base64') : null,
+          scale: s.phys.width / d.bounds.width,
+          windows: live ? [] : outlinesOn(snapshot, d, s.phys),
         });
       });
-      return { win, shot, index, cursorHere: contains(d.bounds, cursor.x, cursor.y) };
+      return { win, display: d, live, cursorHere: contains(d.bounds, cursor.x, cursor.y) };
     });
+    if (live) {
+      Promise.resolve(snapshot).then((snap) => {
+        for (const o of overlays) {
+          if (!o.win.isDestroyed()) o.win.webContents.send('overlay-windows', outlinesOn(snap, o.display, physicalBounds(o.display)));
+        }
+      });
+    }
   });
 }
 
-// Each overlay says when its picture is drawn; it is shown only then, so the
-// screen does not flash black.
+// Each overlay says when it is drawn; it is shown only then, so the screen
+// does not flash black.
 ipcMain.on('overlay-ready', (event) => {
   const o = overlays.find((x) => !x.win.isDestroyed() && x.win.webContents === event.sender);
   if (!o) return;
+  if (o.live) { o.win.showInactive(); return; }
   o.win.show();
   if (o.cursorHere) o.win.focus();
 });
@@ -298,7 +334,7 @@ ipcMain.on('overlay-ready', (event) => {
 ipcMain.on('overlay-done', (event, result) => {
   const from = overlays.find((o) => !o.win.isDestroyed() && o.win.webContents === event.sender);
   if (!from || !result) return closeOverlays(null);
-  closeOverlays({ index: from.index, ...result });
+  closeOverlays({ ...result, displayId: from.display.id });
 });
 
 // ---- Snaps --------------------------------------------------------------------
@@ -404,17 +440,33 @@ async function snap(mode, wait = 0) {
   if (snapping || overlayDone) return;
   snapping = true;
   let hidOwn = false;
+  // An area without a delay is chosen on the live screen (see selectArea).
+  const live = mode === 'area' && !(wait > 0);
   try {
     // A snap started from Smart Snap's own window must not show that window.
     if (mainWin && !mainWin.isDestroyed() && mainWin.isVisible() && mainWin.isFocused()) {
       mainWin.hide();
       hidOwn = true;
-      await delay(300);
+      // (A live selection takes its picture later, when the window is long gone.)
+      if (!live) await delay(300);
     }
     if (wait > 0) await delay(wait * 1000);
 
-    const snapshot = await ask('snapshot');
-    const shots = await captureDisplays();
+    let snapshot = ask('snapshot');
+    let shots = null;
+    let picked = null;
+    if (live) {
+      const screens = screen.getAllDisplays().map((d) => ({ display: d, phys: physicalBounds(d), image: null }));
+      picked = await selectArea(screens, snapshot, true);
+      if (!picked) { if (hidOwn) showMain(); return; }
+      // The selection windows are gone; the screen is drawn again without them.
+      await delay(120);
+      shots = await captureDisplays();
+      snapshot = await snapshot;
+    } else {
+      snapshot = await snapshot;
+      shots = await captureDisplays();
+    }
     if (!shots.length) throw new Error('Windows did not hand over a picture of the screen.');
     const all = screen.getAllDisplays();
     const nameOf = (shot) => displayLabel(shot.display, all.findIndex((d) => d.id === shot.display.id), all.length);
@@ -424,9 +476,10 @@ async function snap(mode, wait = 0) {
     let displayName = '';
 
     if (mode === 'area') {
-      const picked = await selectArea(shots, snapshot);
+      if (!live) picked = await selectArea(shots, snapshot, false);
       if (!picked) { if (hidOwn) showMain(); return; }
-      const shot = shots[picked.index];
+      const shot = shots.find((s) => s.display.id === picked.displayId);
+      if (!shot) throw new Error('That display could not be snapped. Try again.');
       const k = shot.phys.width / shot.display.bounds.width;
       const rect = {
         x: shot.phys.x + picked.x * k, y: shot.phys.y + picked.y * k,
@@ -546,6 +599,8 @@ function snapHtml(n, number) {
 </section>`;
 }
 
+// `opts.picture`: drawn for one tall picture instead of printed pages. The page
+// then keeps the A4 width and its margins itself, on white, without a scrollbar.
 function reportHtml(list, opts) {
   const apps = [...new Set(list.map((n) => (n.app && (n.app.name || n.app.process)) || 'Unknown'))];
   const summary = list.map((n, i) => {
@@ -599,6 +654,7 @@ function reportHtml(list, opts) {
   .mark.point::before { content: ""; position: absolute; left: -5mm; top: -5mm; width: 10mm; height: 10mm; border: .7mm solid #e5484d; border-radius: 50%; background: rgba(229, 72, 77, .12); }
   .mark span { display: inline-grid; place-items: center; min-width: 5mm; height: 5mm; padding: 0 1mm; color: #fff; background: #e5484d; border-radius: 2.5mm; font-size: 8pt; font-weight: 700; line-height: 1; }
   .mark.point span { position: absolute; left: 3mm; top: -8mm; }
+  ${opts.picture ? 'html { background: #fff; scrollbar-width: none; } body { padding: 12mm 14mm 9mm; } .snap:last-child { margin-bottom: 0; }' : ''}
 </style></head><body>
 <header>
   <div class="brand"><img src="${pathToFileURL(ICON).href}" alt="">${APP_NAME}</div>
@@ -615,29 +671,51 @@ ${list.map((n, i) => snapHtml(n, i + 1)).join('')}
 </body></html>`;
 }
 
-async function createReport(opts) {
+// The screenshots that go into a report, with its title and author. The author
+// is remembered for the next report.
+function reportInput(opts) {
   const ids = Array.isArray(opts.ids) ? new Set(opts.ids.map(String)) : null;
   const list = readSnaps().filter((n) => (!ids || ids.has(n.id)) && UUID.test(n.id) && fs.existsSync(snapImage(n.id)));
-  if (!list.length) return { error: 'There are no screenshots to report.' };
   const title = String(opts.title || '').trim().slice(0, 150) || 'Screenshot report';
   const author = String(opts.author || '').trim().slice(0, 150);
   const s = loadSettings();
   if (s.author !== author) { s.author = author; saveSettings(); }
-  const htmlFile = path.join(snapsDir(), 'report.html');
+  return { list, title, author };
+}
+
+// Draws the report in a window of its own that is never shown, hands its page
+// to `use`, and closes it. A picture needs the window drawn off screen: Chromium
+// does not paint a hidden window, so there would be nothing to capture.
+async function withReportPage(list, opts, use) {
+  const htmlFile = path.join(snapsDir(), opts.picture ? 'report-picture.html' : 'report.html');
   let win;
   try {
-    fs.writeFileSync(htmlFile, reportHtml(list, { title, author }));
-    win = new BrowserWindow({ show: false, width: 900, height: 1200, webPreferences: { javascript: false } });
+    fs.writeFileSync(htmlFile, reportHtml(list, opts));
+    win = new BrowserWindow({
+      show: false, width: 900, height: 1200, useContentSize: true,
+      webPreferences: { javascript: false, offscreen: !!opts.picture },
+    });
     await win.loadFile(htmlFile);
+    return await use(win.webContents);
+  } finally {
+    if (win && !win.isDestroyed()) win.destroy();
+    fs.rmSync(htmlFile, { force: true });
+  }
+}
+
+async function createReport(opts) {
+  const { list, title, author } = reportInput(opts);
+  if (!list.length) return { error: 'There are no screenshots to report.' };
+  try {
     // Margins are in inches; the footer carries the page number.
-    const pdf = await win.webContents.printToPDF({
+    const pdf = await withReportPage(list, { title, author }, (wc) => wc.printToPDF({
       pageSize: 'A4',
       printBackground: true,
       margins: { top: 0.55, bottom: 0.75, left: 0.55, right: 0.55 },
       displayHeaderFooter: true,
       headerTemplate: '<span></span>',
       footerTemplate: `<div style="width:100%;padding:0 14mm;display:flex;justify-content:space-between;font:7.5pt Segoe UI,sans-serif;color:#8b93a5"><span>${esc(title)} · ${APP_NAME}</span><span>Page <span class="pageNumber"></span> of <span class="totalPages"></span></span></div>`,
-    });
+    }));
     const dir = reportsDir();
     fs.mkdirSync(dir, { recursive: true });
     const file = path.join(dir, `${safeName(title, 'Screenshot report')} - ${stamp()}.pdf`);
@@ -652,9 +730,40 @@ async function createReport(opts) {
     return { file, count: list.length, cleared: !opts.keep };
   } catch (err) {
     return { error: 'The report could not be created.' };
-  } finally {
-    if (win && !win.isDestroyed()) win.destroy();
-    fs.rmSync(htmlFile, { force: true });
+  }
+}
+
+// The same report as one tall picture on the clipboard, to paste into a chat,
+// an email or a document. Nothing is saved and the screenshots stay in the app.
+// The page is drawn at the A4 width, twice as sharp as on screen; a report too
+// long for that is drawn smaller, so the picture stays within PICTURE_MAX_H.
+const PICTURE_W = 794; // A4 at 96 dpi, in CSS pixels
+const PICTURE_MAX_H = 16000; // in pixels; Chromium cannot capture much taller
+const withTimeout = (promise, ms) =>
+  Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error('timed out')), ms))]);
+
+async function copyReport(opts) {
+  const { list, title, author } = reportInput(opts);
+  if (!list.length) return { error: 'There are no screenshots to report.' };
+  try {
+    const image = await withReportPage(list, { title, author, picture: true }, async (wc) => {
+      wc.debugger.attach('1.3');
+      const send = (method, params) => wc.debugger.sendCommand(method, params);
+      const metrics = (height, deviceScaleFactor) =>
+        send('Emulation.setDeviceMetricsOverride', { width: PICTURE_W, height, deviceScaleFactor, mobile: false });
+      await metrics(1000, 1);
+      const { cssContentSize } = await send('Page.getLayoutMetrics');
+      const height = Math.ceil(cssContentSize.height);
+      await metrics(height, Math.min(2, PICTURE_MAX_H / height));
+      // Closing the window (on a timeout) ends a capture that never finishes.
+      const { data } = await withTimeout(send('Page.captureScreenshot', { format: 'png' }), 20000);
+      return nativeImage.createFromBuffer(Buffer.from(data, 'base64'));
+    });
+    if (image.isEmpty()) throw new Error('empty picture');
+    clipboard.writeImage(image);
+    return { ...image.getSize(), count: list.length };
+  } catch (err) {
+    return { error: 'The report could not be copied as a picture.' };
   }
 }
 
@@ -741,6 +850,7 @@ ipcMain.handle('snaps-save', (_e, id) => {
 });
 
 ipcMain.handle('report', (_e, opts) => createReport(opts || {}));
+ipcMain.handle('report-copy', (_e, opts) => copyReport(opts || {}));
 
 // Opens a report, and only a report: a PDF inside the reports folder.
 ipcMain.handle('report-open', (_e, file) => {

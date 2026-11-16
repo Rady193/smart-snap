@@ -1,5 +1,40 @@
 # Release notes
 
+## 1.1.3 — 16 November 2026
+
+Area snaps on the live screen, a smooth press-drag-release, and the report copied as one picture.
+
+### Downloads
+
+| File | Size | SHA-256 |
+|---|---|---|
+| `Smart-Snap-Setup-1.1.3.exe` | 78.0 MB | `F7974E06DCE9ADD4CC6C7C2F54C774BD9E6707B50484FE59BD420782CED947F8` |
+| `Smart-Snap-Handbook-1.1.3.pdf` | 3.6 MB | `D482B2ED201E1AFD6505B24946E05E491CAE9F5F304387AD8716F93A0C662CF3` |
+
+For 64-bit Windows 10 and 11. Not code-signed, so Windows SmartScreen may ask for confirmation on first run.
+
+### Changed
+
+- **Area snaps on the live screen**: Ctrl + Alt + S (or Area) dims the screen at once but keeps it live, and the picture is taken the moment you let go. The program you were using stays in front. Before, every display was copied first and the area chosen on that copy, which took about a second to appear.
+- **After a Delay the screen still freezes** before you choose, as Windows' own Snipping Tool does: anything placed over the screen closes open menus and hover effects, so this is the way to snap them.
+- **Copy as picture** in the report form: the whole report on the clipboard as one tall picture, to paste into a chat, an email or a document. It uses the title and name in the form, saves nothing, and keeps the snaps.
+
+### Fixed
+
+- **Dragging out an area**: the drag could pick up the screen's picture and lose the release, so finishing needed another click. Now it is press, drag, release, even when the mouse leaves the display while dragging.
+- **Esc in the report form** after an earlier report no longer counts as Create report.
+
+### Updating from 1.1.2
+
+- Settings > Updates > **Update now**, or **Update** in the SCAFFApps Suite.
+
+### Tested
+
+- The packaged app, with the real mouse, over a test window of known colours: an area chosen live and one after a delay were both exactly the size dragged, in the window's own colours, without the dimming or the outline.
+- Copy as picture in the packaged app: the whole report on the clipboard (1588 × 5332 pixels for three snaps); the snaps stayed and no PDF was made. Create report still makes the PDF and clears the snaps.
+- Microsoft Defender finds nothing in the installer.
+- The handbook's report and selection pictures were retaken from this version, in a test profile.
+
 ## 1.1.2 — 16 November 2026
 
 The handbook in the SCAFFApps style, and scrollbars in the SCAFFApps colours.

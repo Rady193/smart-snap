@@ -6,7 +6,12 @@
 <title>Smart Snap selection</title>
 <style>
   html, body { margin: 0; height: 100%; overflow: hidden; cursor: crosshair; user-select: none; background: #000; font: 13px/1.4 "Segoe UI", system-ui, sans-serif; }
-  #shot { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  /* The live screen shows through. The faint tint keeps the mouse on this
+     window where nothing is drawn. */
+  html.live { background: rgba(0, 0, 0, .004); }
+  html.live body { background: transparent; }
+  html.live #shot { display: none; }
+  #shot { position: fixed; inset: 0; width: 100%; height: 100%; display: block; -webkit-user-drag: none; pointer-events: none; }
   /* The dimming is drawn around the chosen box by four strips. */
   .dim { position: fixed; background: rgba(8, 10, 16, .45); pointer-events: none; }
   #box { position: fixed; display: none; outline: 2px solid #f0c33c; box-shadow: 0 0 0 1px rgba(255, 255, 255, .55) inset; pointer-events: none; }
@@ -19,7 +24,7 @@
 </style>
 </head>
 <body>
-<img id="shot" alt="">
+<img id="shot" alt="" draggable="false">
 <div class="dim" id="d-top"></div><div class="dim" id="d-left"></div><div class="dim" id="d-right"></div><div class="dim" id="d-bottom"></div>
 <div id="box"></div>
 <div id="size"></div>
@@ -34,7 +39,9 @@
   let start = null;
   let current = null;
   let finished = false;
-  const ratio = () => (shot.naturalWidth || innerWidth) / innerWidth;
+  let scale = devicePixelRatio;
+  let last = null;
+  const ratio = () => (shot.naturalWidth ? shot.naturalWidth / innerWidth : scale);
 
   // Dims everything outside rectangle r (or the whole screen when r is null).
   function draw(r, kind, label) {
@@ -81,34 +88,51 @@
     window.overlay.done(result);
   }
 
+  const shown = () => {
+    draw(null);
+    if (last) hover(last);
+    requestAnimationFrame(() => requestAnimationFrame(() => window.overlay.ready()));
+  };
   window.overlay.onImage((data) => {
     windows = data.windows || [];
-    shot.onload = () => {
-      draw(null);
-      requestAnimationFrame(() => requestAnimationFrame(() => window.overlay.ready()));
-    };
+    if (data.scale) scale = data.scale;
+    if (!data.src) {
+      document.documentElement.classList.add('live');
+      return shown();
+    }
+    shot.onload = shown;
     shot.src = data.src;
   });
+  // On the live screen the window outlines come a moment later.
+  if (window.overlay.onWindows) {
+    window.overlay.onWindows((list) => {
+      windows = list || [];
+      if (last && !start) hover(last);
+    });
+  }
 
-  addEventListener('mousedown', (e) => {
+  // Press, drag, release. The pointer stays with this window until it is
+  // released, even outside it; nothing on the page can be dragged away.
+  addEventListener('dragstart', (e) => e.preventDefault());
+  addEventListener('pointerdown', (e) => {
     if (e.button === 2) return finish(null);
     if (e.button !== 0) return;
+    try { document.documentElement.setPointerCapture(e.pointerId); } catch { /* still works inside the window */ }
     start = { x: e.clientX, y: e.clientY };
   });
 
-  addEventListener('mousemove', (e) => {
+  addEventListener('pointermove', (e) => {
+    last = { clientX: e.clientX, clientY: e.clientY };
     if (!start) return hover(e);
-    const dx = e.clientX - start.x, dy = e.clientY - start.y;
-    if (Math.abs(dx) < 4 && Math.abs(dy) < 4 && !document.body.classList.contains('dragging')) return;
+    const x = Math.min(innerWidth, Math.max(0, e.clientX)), y = Math.min(innerHeight, Math.max(0, e.clientY));
+    const dx = x - start.x, dy = y - start.y;
+    if (Math.abs(dx) < 3 && Math.abs(dy) < 3 && !document.body.classList.contains('dragging')) return;
     document.body.classList.add('dragging');
-    current = {
-      x: Math.min(start.x, e.clientX), y: Math.min(start.y, e.clientY),
-      w: Math.abs(dx), h: Math.abs(dy),
-    };
+    current = { x: Math.min(start.x, x), y: Math.min(start.y, y), w: Math.abs(dx), h: Math.abs(dy) };
     draw(current, '', px(current));
   });
 
-  addEventListener('mouseup', (e) => {
+  addEventListener('pointerup', (e) => {
     if (e.button !== 0 || !start) return;
     const dragging = document.body.classList.contains('dragging');
     start = null;
@@ -121,6 +145,12 @@
     // A click takes the window under the mouse, or the whole display.
     const w = windowAt(e.clientX, e.clientY);
     finish(w ? { x: w.x, y: w.y, w: w.w, h: w.h, hwnd: w.hwnd } : { x: 0, y: 0, w: innerWidth, h: innerHeight });
+  });
+
+  addEventListener('pointercancel', () => {
+    start = null;
+    document.body.classList.remove('dragging');
+    draw(null);
   });
 
   addEventListener('keydown', (e) => {

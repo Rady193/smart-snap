@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld('smartSnap', {
   },
   report: {
     create: (opts) => ipcRenderer.invoke('report', opts),
+    copyPicture: (opts) => ipcRenderer.invoke('report-copy', opts),
     open: (file) => ipcRenderer.invoke('report-open', file),
   },
   openLink: (url) => ipcRenderer.invoke('open-link', url),

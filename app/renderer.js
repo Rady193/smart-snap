@@ -232,12 +232,49 @@ $('report-btn').onclick = () => {
   if (!snaps.length) return;
   $('r-author').value = config.author || '';
   $('r-keep').checked = !!config.keepAfterReport;
-  const marked = snaps.filter((s) => s.text.trim()).length;
-  $('r-note').textContent = `${snaps.length} screenshot${snaps.length === 1 ? '' : 's'}, ${marked} with a comment. They are put in the report in the order shown in the list.`;
+  resetCopy();
+  // Esc leaves the last answer in place; it must not count as "create" again.
+  $('report-dlg').returnValue = '';
   $('report-dlg').showModal();
   $('r-title').focus();
 };
+
+// The dialog's note; after a copy it says where the report went for a while.
+function reportNote() {
+  const marked = snaps.filter((s) => s.text.trim()).length;
+  return `${snaps.length} screenshot${snaps.length === 1 ? '' : 's'}, ${marked} with a comment. They are put in the report in the order shown in the list.`;
+}
+function resetCopy() {
+  clearTimeout($('r-copy').timer);
+  $('r-copy').disabled = false;
+  $('r-copy').querySelector('span').textContent = 'Copy as picture';
+  $('r-note').textContent = reportNote();
+  $('r-note').classList.remove('done');
+  $('r-note').classList.remove('warn');
+}
+
+// The same report as one picture on the clipboard. The dialog stays open and
+// the screenshots stay in Smart Snap, whatever "Keep" says.
+$('r-copy').onclick = async () => {
+  const btn = $('r-copy');
+  const label = btn.querySelector('span');
+  resetCopy();
+  btn.disabled = true;
+  label.textContent = 'Copying…';
+  config.author = $('r-author').value.trim();
+  const result = await api.report.copyPicture({ title: $('r-title').value, author: config.author });
+  btn.disabled = false;
+  const ok = result && !result.error;
+  label.textContent = ok ? 'Copied' : 'Copy as picture';
+  $('r-note').textContent = ok
+    ? 'The report is on the clipboard as a picture: paste it into a chat, an email or a document. The screenshots are still here.'
+    : (result && result.error) || 'The report could not be copied as a picture.';
+  $('r-note').classList.toggle('done', ok);
+  $('r-note').classList.toggle('warn', !ok);
+  btn.timer = setTimeout(resetCopy, 6000);
+};
 $('report-dlg').addEventListener('close', async () => {
+  clearTimeout($('r-copy').timer);
   if ($('report-dlg').returnValue !== 'create') return;
   const keep = $('r-keep').checked;
   config.author = $('r-author').value.trim();
