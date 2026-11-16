@@ -57,11 +57,15 @@ Closing the window does not stop Smart Snap: it keeps running in the tray so the
 
 | Kind | Shortcut | What it takes |
 |---|---|---|
-| Area | Ctrl + Alt + S | The screen dims but stays live. **Press, drag and release** to take a rectangle; the picture is taken the moment you let go. **Click** a window to take that window, **Enter** for the whole display, **Esc** or right-click to cancel. While you move the mouse, the window under it is outlined in gold and its size is shown. Then the comment box opens beside the area (below). |
+| Area | Ctrl + Alt + S, or PrtScn | The screen dims but stays live. **Press, drag and release** to take a rectangle; the picture is taken the moment you let go. **Click** a window to take that window, **Enter** for the whole display, **Esc** or right-click to cancel. While you move the mouse, the window under it is outlined in gold and its size is shown. Then the comment box opens beside the area (below). |
 | Window | Ctrl + Alt + W | The window you are using, without its shadow. |
 | Full screen | Ctrl + Alt + F | The whole display the mouse is on. |
 
 The same three are buttons at the top of the Smart Snap window and items in the tray menu. When you use a button, Smart Snap hides itself first, so it takes the window you were using before.
+
+**PrtScn** also snaps an area. Windows 11 gives that key to its Snipping Tool first: turn off **Use the Print screen key to open screen capture** in Windows Settings > Accessibility > Keyboard. Smart Snap's Settings says when it is on, with a button that opens that page. To leave PrtScn to Windows or another program, switch it off in Smart Snap's Settings.
+
+**Keep on top.** The pin in the top bar keeps the Smart Snap window above other programs, for example beside the app you are testing, until you click it again; Smart Snap remembers it. The window is never in a snap: it steps aside while the picture is taken and comes back afterwards.
 
 **The comment box.** Once an area is chosen, it stays outlined and a box beside it asks for the snap's comment, as Multi Screens asks for a note's. The picture is already taken: the box and the dimming are not in it. Type, then:
 
@@ -135,6 +139,7 @@ Smart Snap asks the SCAFFApps website (GitHub if the website does not answer) fo
 | Keys | Where | Action |
 |---|---|---|
 | Ctrl + Alt + S | Anywhere | Snap an area or a window |
+| PrtScn | Anywhere | The same (see [Taking a snap](#taking-a-snap) for Windows 11) |
 | Ctrl + Alt + W | Anywhere | Snap the window in front |
 | Ctrl + Alt + F | Anywhere | Snap the full screen |
 | Esc / right-click | While choosing an area | Cancel |

@@ -7,7 +7,7 @@ let selected = null;
 let config = null;
 
 const MODES = { area: 'Area', window: 'Window', full: 'Full screen' };
-const keyText = (k) => k.replace('Control', 'Ctrl').replace(/\+/g, ' + ');
+const keyText = (k) => k.replace('Control', 'Ctrl').replace('PrintScreen', 'PrtScn').replace(/\+/g, ' + ');
 
 // ---- Appearance -------------------------------------------------------------
 function applyTheme(theme) {
@@ -321,6 +321,7 @@ $('folder-btn').onclick = async () => {
 };
 async function openSettings() {
   config = await api.config();
+  showShortcuts();
   $('s-folder').textContent = (await api.output.get()).dir;
   $('s-login').checked = config.startWithWindows;
   renderUpdates();
@@ -331,6 +332,52 @@ async function openSettings() {
 $('settings-btn').onclick = openSettings;
 $('s-choose').onclick = async () => { $('s-folder').textContent = (await api.output.choose()).dir; };
 $('s-login').onchange = () => api.settings({ startWithWindows: $('s-login').checked });
+
+// ---- Shortcuts ----------------------------------------------------------------
+// The keys on show, the Print Screen key's switch, and what keeps a key from
+// working: another program holding it, or Windows giving Print Screen to its
+// Snipping Tool (checked again when Smart Snap comes back from Windows Settings).
+function showShortcuts() {
+  for (const k of document.querySelectorAll('kbd[data-key]')) k.textContent = keyText(config.shortcuts[k.dataset.key]);
+  const prt = config.printScreen;
+  const prtWorks = prt.on && !prt.windowsTakesIt && !config.shortcutProblems.includes('PrintScreen');
+  // The shortcut also in each snap button's tip, for a narrow window without the key labels.
+  for (const b of document.querySelectorAll('.snapbtn')) {
+    if (!b.dataset.tip) b.dataset.tip = b.title;
+    const keys = keyText(config.shortcuts[b.dataset.mode]) + (b.dataset.mode === 'area' && prtWorks ? ' or PrtScn' : '');
+    b.title = `${b.dataset.tip} (${keys})`;
+  }
+  for (const row of document.querySelectorAll('.prtscn-row')) row.hidden = !prtWorks;
+  $('s-prtscn').checked = prt.on;
+  $('s-prtscn-windows').hidden = !(prt.on && prt.windowsTakesIt);
+  $('s-problems').hidden = !config.shortcutProblems.length;
+  $('s-problems').textContent = config.shortcutProblems.length
+    ? `Another program already uses ${config.shortcutProblems.map(keyText).join(', ')}. Those shortcuts do not work while it runs; use the buttons or the tray icon instead.`
+    : '';
+}
+$('s-prtscn').onchange = async () => {
+  await api.settings({ printScreen: $('s-prtscn').checked });
+  config = await api.config();
+  showShortcuts();
+};
+$('s-prtscn-open').onclick = () => api.openKeyboardSettings();
+window.addEventListener('focus', async () => {
+  if (!$('settings-dlg').open) return;
+  config = await api.config();
+  showShortcuts();
+});
+
+// ---- Keep on top --------------------------------------------------------------
+// The pin keeps the window above other programs (remembered for the next start).
+function showPinned(on) {
+  $('pin-btn').setAttribute('aria-pressed', String(on));
+  $('pin-btn').title = on ? 'Smart Snap stays on top of other windows: click to stop' : 'Keep Smart Snap on top of other windows';
+}
+$('pin-btn').onclick = () => {
+  const on = $('pin-btn').getAttribute('aria-pressed') !== 'true';
+  showPinned(on);
+  api.settings({ pinned: on });
+};
 
 // ---- Updates ------------------------------------------------------------------
 // The main process asks GitHub for the newest release. Settings shows the
@@ -477,16 +524,8 @@ addEventListener('keydown', (e) => {
 // ---- Start --------------------------------------------------------------------
 (async () => {
   config = await api.config();
-  for (const k of document.querySelectorAll('kbd[data-key]')) k.textContent = keyText(config.shortcuts[k.dataset.key]);
-  // The shortcut also in each snap button's tip, for a narrow window without the key labels.
-  for (const b of document.querySelectorAll('.snapbtn')) {
-    if (!b.dataset.tip) b.dataset.tip = b.title;
-    b.title = `${b.dataset.tip} (${keyText(config.shortcuts[b.dataset.mode])})`;
-  }
-  if (config.shortcutProblems.length) {
-    $('s-problems').hidden = false;
-    $('s-problems').textContent = `Another program already uses ${config.shortcutProblems.map(keyText).join(', ')}. Those shortcuts do not work while it runs; use the buttons or the tray icon instead.`;
-  }
+  showShortcuts();
+  showPinned(config.pinned);
   applyTheme(document.documentElement.dataset.theme || 'dark');
   showUpdate(await api.updates.status());
   api.updates.onStatus(showUpdate);

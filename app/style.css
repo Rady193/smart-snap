@@ -109,6 +109,9 @@ button.primary:hover:not(:disabled) { background: var(--accent-hover); border-co
 button.danger:hover { color: var(--danger); border-color: var(--danger); }
 button.icon-btn { width: 32px; padding: 0; }
 button.icon-btn.small { width: 28px; height: 28px; }
+/* The pin, while the window is kept on top of other programs. */
+button.icon-btn[aria-pressed="true"] { color: var(--accent); background: var(--accent-soft); border-color: var(--accent); }
+button.icon-btn[aria-pressed="true"] svg.icon { transform: rotate(-30deg); }
 button.link { height: auto; padding: 0; background: none; border: 0; color: var(--accent); font-weight: 500; }
 button.link:hover { background: none; text-decoration: underline; }
 

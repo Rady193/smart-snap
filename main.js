@@ -35,6 +35,8 @@ const SHORTCUTS = {
   window: 'Control+Alt+W',
   full: 'Control+Alt+F',
 };
+// The Print Screen key also snaps an area, unless it is switched off in Settings.
+const PRINT_SCREEN = 'PrintScreen';
 const MODE_NAMES = { area: 'Area', window: 'Window', full: 'Full screen' };
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -560,6 +562,7 @@ async function snap(mode, wait = 0) {
   if (snapping || overlayDone) return;
   snapping = true;
   let hidOwn = false;
+  let hidPinned = false;
   // An area without a delay is chosen on the live screen (see selectArea).
   const live = mode === 'area' && !(wait > 0);
   try {
@@ -568,6 +571,12 @@ async function snap(mode, wait = 0) {
       mainWin.hide();
       hidOwn = true;
       // (A live selection takes its picture later, when the window is long gone.)
+      if (!live) await delay(300);
+    } else if (mainWin && !mainWin.isDestroyed() && mainWin.isAlwaysOnTop() && mainWin.isVisible() && !mainWin.isMinimized()) {
+      // Pinned on top of the program being snapped, it would be in the picture:
+      // it steps aside, and comes back afterwards without taking the focus.
+      mainWin.hide();
+      hidPinned = true;
       if (!live) await delay(300);
     }
     if (wait > 0) await delay(wait * 1000);
@@ -679,6 +688,7 @@ async function snap(mode, wait = 0) {
     commentAnswer = null;
     endOverlays();
     snapping = false;
+    if (hidPinned && mainWin && !mainWin.isDestroyed() && !mainWin.isVisible()) mainWin.showInactive();
   }
 }
 
@@ -936,9 +946,11 @@ ipcMain.handle('set-theme', (event, theme) => {
   if (CUSTOM_TITLE_BAR) win.setTitleBarOverlay({ ...TITLE_BAR[name], height: TITLE_BAR_HEIGHT });
 });
 
-ipcMain.handle('config', () => ({
+ipcMain.handle('config', async () => ({
   shortcuts: SHORTCUTS,
   shortcutProblems: shortcutProblems,
+  printScreen: { on: loadSettings().printScreen !== false, windowsTakesIt: await windowsTakesPrintScreen() },
+  pinned: !!loadSettings().pinned,
   author: loadSettings().author || '',
   startWithWindows: app.getLoginItemSettings().openAtLogin,
   keepAfterReport: !!loadSettings().keepAfterReport,
@@ -1049,7 +1061,20 @@ ipcMain.handle('settings-set', (_e, change) => {
     loadSettings().keepAfterReport = !!change.keepAfterReport;
     saveSettings();
   }
+  if ('printScreen' in change) {
+    loadSettings().printScreen = !!change.printScreen;
+    saveSettings();
+    registerShortcuts();
+  }
+  if ('pinned' in change) {
+    loadSettings().pinned = !!change.pinned;
+    saveSettings();
+    if (mainWin && !mainWin.isDestroyed()) mainWin.setAlwaysOnTop(!!change.pinned);
+  }
 });
+
+// Where Windows' own use of the Print Screen key is switched off.
+ipcMain.handle('open-keyboard-settings', () => shell.openExternal('ms-settings:easeofaccess-keyboard'));
 
 ipcMain.on('interface-ready', () => {
   if (mainWin && !mainWin.isDestroyed() && !mainWin.isVisible() && !STARTED_HIDDEN) revealMain();
@@ -1399,6 +1424,7 @@ function createMain() {
     y: Math.round(area.y + (area.height - height) / 2),
     width, height, minWidth: 820, minHeight: 560,
     show: false,
+    alwaysOnTop: !!loadSettings().pinned,   // pinned on top of other programs (the pin in the bar)
     backgroundColor: colors.color,
     autoHideMenuBar: true,
     title: APP_NAME,
@@ -1469,6 +1495,25 @@ function registerShortcuts() {
     try { ok = globalShortcut.register(keys, () => snap(mode)); } catch { ok = false; }
     if (!ok) shortcutProblems.push(keys);
   }
+  if (loadSettings().printScreen !== false) {
+    let ok = false;
+    try { ok = globalShortcut.register(PRINT_SCREEN, () => snap('area')); } catch { ok = false; }
+    if (!ok) shortcutProblems.push(PRINT_SCREEN);
+  }
+}
+
+// Windows 11 can send the Print Screen key to its Snipping Tool before any app
+// sees it ("Use the Print screen key to open screen capture", in Settings >
+// Accessibility > Keyboard). Not set means on in Windows 11, off in Windows 10.
+function windowsTakesPrintScreen() {
+  if (process.platform !== 'win32') return Promise.resolve(false);
+  return new Promise((resolve) => {
+    execFile('reg.exe', ['query', 'HKCU\\Control Panel\\Keyboard', '/v', 'PrintScreenKeyForSnippingEnabled'],
+      { windowsHide: true, timeout: 5000 }, (_err, out) => {
+        const m = /PrintScreenKeyForSnippingEnabled\s+REG_DWORD\s+0x([0-9a-f]+)/i.exec(String(out || ''));
+        resolve(m ? parseInt(m[1], 16) !== 0 : Number(os.release().split('.')[2]) >= 22000);
+      });
+  });
 }
 
 if (app.hasSingleInstanceLock()) {

@@ -24,6 +24,7 @@
   <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9.5l6 6 6-6"/></symbol>
   <symbol id="i-open" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M9 3.5h6M10 3.5v5.2L6.8 12.6V15h10.4v-2.4L14 8.7V3.5M12 15v5.5"/></symbol>
 </svg>
 
 <div class="titlebar"><img src="icon.png" alt=""><span>Smart Snap</span></div>
@@ -45,6 +46,7 @@
   <div class="spacer"></div>
   <button id="copy-report-btn" disabled title="Copy the whole report to the clipboard as one picture, to paste into a chat, an email or a document. The screenshots stay in Smart Snap."><svg class="icon"><use href="#i-copy"/></svg><span>Copy as picture</span></button>
   <button id="report-btn" class="primary" disabled><svg class="icon"><use href="#i-pdf"/></svg>Create PDF report<span class="count" id="count"></span></button>
+  <button id="pin-btn" class="icon-btn" aria-pressed="false" title="Keep Smart Snap on top of other windows"><svg class="icon"><use href="#i-pin"/></svg></button>
   <button id="folder-btn" class="icon-btn" title="Open the output folder"><svg class="icon"><use href="#i-folder"/></svg></button>
   <button id="settings-btn" class="icon-btn" title="Settings"><svg class="icon"><use href="#i-settings"/></svg></button>
   <button id="theme-btn" class="icon-btn" title="Light or dark"><svg class="icon"><use href="#i-sun"/></svg></button>
@@ -98,6 +100,7 @@
     <p>Smart Snap keeps working in the tray when this window is closed. Use the shortcuts from any program:</p>
     <table class="keys">
       <tr><td><kbd data-key="area"></kbd></td><td>Snap an area, or click a window</td></tr>
+      <tr class="prtscn-row" hidden><td><kbd>PrtScn</kbd></td><td>The same</td></tr>
       <tr><td><kbd data-key="window"></kbd></td><td>Snap the window in front</td></tr>
       <tr><td><kbd data-key="full"></kbd></td><td>Snap the full screen</td></tr>
     </table>
@@ -133,9 +136,12 @@
       <div class="label">Shortcuts</div>
       <table class="keys">
         <tr><td><kbd data-key="area"></kbd></td><td>Area or window</td></tr>
+        <tr><td><kbd>PrtScn</kbd></td><td>Area or window, while switched on below</td></tr>
         <tr><td><kbd data-key="window"></kbd></td><td>Window in front</td></tr>
         <tr><td><kbd data-key="full"></kbd></td><td>Full screen</td></tr>
       </table>
+      <label class="check"><input id="s-prtscn" type="checkbox"> Use the Print Screen key (PrtScn) to snap an area</label>
+      <p class="warn" id="s-prtscn-windows" hidden>Windows gives the Print Screen key to its Snipping Tool first. To use it for Smart Snap, turn off “Use the Print screen key to open screen capture”. <button type="button" class="link" id="s-prtscn-open">Open Windows Settings</button></p>
       <p class="warn" id="s-problems" hidden></p>
     </div>
     <div class="field update-box" id="s-updates"></div>

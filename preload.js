@@ -30,6 +30,7 @@ contextBridge.exposeInMainWorld('smartSnap', {
     open: () => ipcRenderer.invoke('output-open'),
   },
   settings: (change) => ipcRenderer.invoke('settings-set', change),
+  openKeyboardSettings: () => ipcRenderer.invoke('open-keyboard-settings'),
   updates: {
     status: () => ipcRenderer.invoke('update-status'),
     check: () => ipcRenderer.invoke('update-check'),
