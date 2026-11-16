@@ -9,7 +9,7 @@ The Print Screen key really snaps an area.
 | File | Size | SHA-256 |
 |---|---|---|
 | `Smart-Snap-Setup-1.2.1.exe` | 78.0 MB | `DC4B20973834D8B7EC9C088FAA8DDA9FCEEF6990331B80ACD6C36BAA91BCCE0F` |
-| `Smart-Snap-Handbook-1.2.0.pdf` | 3.6 MB | `F97B9327983889790E71621CC9F6A6700B4FD560B39C927A6D4BE245ABF14D96` |
+| `Smart-Snap-Handbook-1.2.1.pdf` | 3.7 MB | `B4F260D24D2D965048EC1D16F2B810DEC3955FBE9F8D7C1BAF5EBE44E24F5003` |
 
 For 64-bit Windows 10 and 11. Not code-signed, so Windows SmartScreen may ask for confirmation on first run.
 
@@ -17,9 +17,9 @@ For 64-bit Windows 10 and 11. Not code-signed, so Windows SmartScreen may ask fo
 
 - **Print Screen snaps an area.** In 1.2.0 the key did nothing: Electron accepted it as a shortcut but never asked Windows for it. Smart Snap now claims the key from Windows itself, as other screenshot programs do, and gives it back when it quits. If another program has the key, Smart Snap asks for it again a few times (an older copy may still be closing after an update), and Settings names the key as taken.
 
-### Unchanged
+### Changed
 
-- **The handbook** is 1.2.0's, `Smart-Snap-Handbook-1.2.0.pdf`: it already describes Print Screen.
+- **The handbook**, `Smart-Snap-Handbook-1.2.1.pdf`: 1.2.0's pages, which already describe Print Screen, with its pictures retaken, mixed between the dark and light appearance, and the SCAFFApps Suite on the back page as it is in 1.0.3.
 
 ### Updating from 1.2.0 or 1.1.5
 

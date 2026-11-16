@@ -1,5 +1,5 @@
-"""Makes the Smart Snap handbook: "Smart Snap Handbook.pdf" in the project folder, and a copy named for the release in
-release/ (Smart-Snap-Handbook-<version>.pdf, the name the SCAFFApps Suite looks for).
+"""Makes the Smart Snap handbook: release/Smart-Snap-Handbook-<version>.pdf, its only copy (the name the SCAFFApps
+Suite looks for; attached to the GitHub release).
 
     python handbook\\build_handbook.py              retake the pictures, then print
     python handbook\\build_handbook.py --no-shots   print with the pictures as they are
@@ -125,6 +125,8 @@ def overlay_pictures(material):
         page.mouse.move(1180, 420)
         page.wait_for_timeout(300)
         page.screenshot(path=str(IMG / "overlay-window.png"))
+        # the area and its comment box in the light appearance (the handbook mixes the two)
+        page.evaluate("document.documentElement.dataset.theme = 'light'")
         # (in this test browser a picture can be dragged away, which would end the selection's drag at once)
         page.evaluate("document.getElementById('shot').draggable = false")
         page.mouse.move(600, 430)
@@ -154,19 +156,20 @@ def main_session(work, material, icon, api):
         time.sleep(2)
         w.js("document.querySelectorAll('#list li')[0].click()")
         time.sleep(1)
+        # the pictures in both appearances, mixed through the handbook
         w.shot(IMG / "main-dark.png")
         top = w.rect("#report-btn")
         w.shot(IMG / "bar.png", {"x": 0, "y": 0, "width": w.js("innerWidth"), "height": top["y"] + top["h"] + 12})
-        w.shot(IMG / "details.png", union(w.rect("#app-icon"), w.rect("#app-title"), w.rect("#link"), w.rect("#taken"), p=12))
         w.js("document.getElementById('theme-btn').click()")
         time.sleep(0.8)
         w.js("document.querySelectorAll('#list li')[1].click()")
         time.sleep(0.8)
         w.shot(IMG / "main-light.png")
-        w.js("document.getElementById('theme-btn').click()")
-        time.sleep(0.8)
         w.js("document.querySelectorAll('#list li')[0].click()")
         time.sleep(0.6)
+        w.shot(IMG / "details.png", union(w.rect("#app-icon"), w.rect("#app-title"), w.rect("#link"), w.rect("#taken"), p=12))
+        w.js("document.getElementById('theme-btn').click()")
+        time.sleep(0.8)
 
         # the report: the form, then the PDF (the snaps kept, for the pictures that follow)
         w.click("#report-btn")
@@ -191,8 +194,10 @@ def main_session(work, material, icon, api):
             print("!! no report was made")
         w.js("document.getElementById('toast') && (document.getElementById('toast').hidden = true)")
 
-        # settings: the test folder shown as an example one; no warning about shortcuts this test copy shares with
-        # the Smart Snap already running on this computer
+        # settings (light): the test folder shown as an example one; no warning about shortcuts this test copy shares
+        # with the Smart Snap already running on this computer
+        w.js("document.getElementById('theme-btn').click()")
+        time.sleep(0.8)
         w.click("#settings-btn")
         w.wait("document.getElementById('settings-dlg').open")
         time.sleep(1)
@@ -226,6 +231,8 @@ def update_session(work):
             w.front()
             time.sleep(8)
             w.shot(IMG / "toolbar-dot.png", union(w.rect("#report-btn"), w.rect("#theme-btn"), p=10))   # the gold dot
+            w.js("document.getElementById('theme-btn').click()")              # the update offer: light
+            time.sleep(0.8)
             w.click("#settings-btn")
             w.wait("document.getElementById('settings-dlg').open")
             time.sleep(1.2)
@@ -256,6 +263,8 @@ def signup_session(work):
         w = kit.window(port, "index.html")
         w.front()
         time.sleep(1.5)
+        w.js("document.getElementById('theme-btn').click()")              # before the first snap: light
+        time.sleep(0.8)
         w.shot(IMG / "empty.png")
         w.close()
     finally:
@@ -291,19 +300,12 @@ def main():
     a = ap.parse_args()
     if not a.no_shots:
         shots(a.only)
-    # printed in handbook/build (never open anywhere), then copied: beside the source and, named for the release, in
-    # release/; a copy a PDF reader has open is left as it is, and said so
+    # printed in handbook/build (never open anywhere), then moved into release/, named for the release: the only
+    # copy (the name the SCAFFApps Suite looks for, attached to the GitHub release)
     (HERE / "build").mkdir(exist_ok=True)
     pdf = kit.print_pdf(HERE / "handbook.html", HERE / "build" / "Smart Snap Handbook.pdf",
                         HERE / "preview" if a.preview else None, chromium=a.chromium)
-    print(f"{pdf} ({pdf.stat().st_size // 1024} KB)")
-    (ROOT / "release").mkdir(exist_ok=True)
-    for target in (ROOT / "Smart Snap Handbook.pdf", ROOT / "release" / f"Smart-Snap-Handbook-{VERSION}.pdf"):
-        try:
-            shutil.copy2(pdf, target)
-            print(f"and {target}")
-        except PermissionError:
-            print(f"!! {target} is open in another program: close it and build again to replace it")
+    kit.to_release(pdf, ROOT / "release" / f"Smart-Snap-Handbook-{VERSION}.pdf")
     # release/ keeps only the newest handbook; the earlier ones stay on their GitHub releases
     newest = tuple(int(x) for x in VERSION.split("."))
     for old in (ROOT / "release").glob("Smart-Snap-Handbook-*.pdf"):

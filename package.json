@@ -56,7 +56,8 @@
       "shortcutName": "Smart Snap",
       "artifactName": "Smart-Snap-Setup-${version}.${ext}",
       "include": "build/installer.nsh",
-      "menuCategory": "SCAFFApps"
+      "menuCategory": "SCAFFApps",
+      "differentialPackage": false
     }
   }
 }

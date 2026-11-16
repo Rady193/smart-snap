@@ -4,7 +4,7 @@ Smart Snap takes screenshots that remember where they came from. Each snap recor
 
 Version 1.2.1 · Windows 10 and 11 (64-bit) · Published by SCAFFApps
 
-The **[handbook](Smart%20Snap%20Handbook.pdf)** explains everything, with pictures.
+The **[handbook](https://github.com/Rady193/smart-snap/releases/latest)** (`Smart-Snap-Handbook-<version>.pdf`, on the Releases page) explains everything, with pictures.
 
 ## Contents
 
@@ -203,7 +203,7 @@ npm run dist
 | `app/index.html`, `app/style.css`, `app/renderer.js` | The app window. |
 | `app/overlay.html` | The dimmed screen on which an area is chosen: see-through over the live screen, or the frozen picture after a delay. |
 | `app/theme-early.js` | Applies the saved light or dark appearance before the window is first drawn. |
-| `handbook/` | `handbook.html`, its pictures, and `build-handbook.js`, which prints it to `Smart Snap Handbook.pdf`: `node_modules\electron\dist\electron.exe handbook\build-handbook.js`. |
+| `handbook/` | `handbook.html`, its pictures, the shared `kit.py`, and `build_handbook.py`, which takes the pictures and prints the handbook to `release\Smart-Snap-Handbook-<version>.pdf`, its only copy: `C:\venvs\studio\Scripts\python.exe handbook\build_handbook.py`. |
 | `build/` | Icon files and the script that draws them, the packaging hook, and `installer.nsh`, the installer page that asks for the output folder and moves an install from the old folder. |
 
 ## Licence
