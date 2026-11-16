@@ -14,6 +14,7 @@ function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
   localStorage.setItem('appTheme', JSON.stringify(theme));
   $('theme-btn').querySelector('use').setAttribute('href', theme === 'light' ? '#i-moon' : '#i-sun');
+  $('theme-btn').title = theme === 'dark' ? 'Switch to light appearance' : 'Switch to dark appearance';
   api.setTheme(theme);
 }
 $('theme-btn').onclick = () => applyTheme(document.documentElement.dataset.theme === 'light' ? 'dark' : 'light');

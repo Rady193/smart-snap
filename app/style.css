@@ -104,6 +104,7 @@ button {
 button:hover { background: var(--surface-3); border-color: var(--line-strong); }
 button:active { transform: translateY(1px); }
 button:disabled { opacity: .45; cursor: default; transform: none; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }   /* the keyboard's place, as in every SCAFFApps app */
 button.primary { color: #fff; background: var(--accent-strong); border-color: var(--accent-strong); }
 button.primary:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
 button.danger:hover { color: var(--danger); border-color: var(--danger); }

@@ -2,7 +2,7 @@
 
 Smart Snap takes screenshots that remember where they came from. Each snap records the application it was taken from, the window title and, for web browsers, the address of the page. Add a comment, mark a spot, and turn all your snaps into one PDF report.
 
-Version 1.2.1 · Windows 10 and 11 (64-bit) · Published by SCAFFApps
+Version 1.2.2 · Windows 10 and 11 (64-bit) · Published by SCAFFApps
 
 The **[handbook](https://github.com/Rady193/smart-snap/releases/latest)** (`Smart-Snap-Handbook-<version>.pdf`, on the Releases page) explains everything, with pictures.
 
@@ -24,7 +24,7 @@ The **[handbook](https://github.com/Rady193/smart-snap/releases/latest)** (`Smar
 
 ## Install
 
-Download `Smart-Snap-Setup-1.2.1.exe` from the [Releases page](https://github.com/Rady193/smart-snap/releases/latest) and run it, or install it from the **SCAFFApps Suite**. It installs for everyone on the computer, in `C:\Program Files\SCAFFApps\Smart Snap` unless you choose another folder, so Windows asks for administrator permission once. It adds a desktop shortcut and a Start menu shortcut in the **SCAFFApps** folder, and can be removed from Windows Settings. A copy installed by an earlier version in `C:\Program Files\Smart Snap` moves to the SCAFFApps folder when it updates.
+Download `Smart-Snap-Setup-1.2.2.exe` from the [Releases page](https://github.com/Rady193/smart-snap/releases/latest) and run it, or install it from the **SCAFFApps Suite**. It installs for everyone on the computer, in `C:\Program Files\SCAFFApps\Smart Snap` unless you choose another folder, so Windows asks for administrator permission once. It adds a desktop shortcut and a Start menu shortcut in the **SCAFFApps** folder, and can be removed from Windows Settings. A copy installed by an earlier version in `C:\Program Files\Smart Snap` moves to the SCAFFApps folder when it updates.
 
 Since 1.1.0 Smart Snap is installed, not portable. A portable copy from before cannot update itself to it: install it with the installer once, then delete the portable file.
 
@@ -51,7 +51,7 @@ The first SCAFFApps app to start on a Windows account asks for your **name** and
 5. Repeat for as many snaps as you need.
 6. Press **Create PDF report**.
 
-Closing the window does not stop Smart Snap: it keeps running in the tray so the shortcuts work from any program. To stop it, right-click the tray icon and choose **Quit**.
+Closing the window does not stop Smart Snap: it keeps running in the tray so the shortcuts work from any program. To stop it, right-click the tray icon and choose **Quit Smart Snap**.
 
 ## Taking a snap
 

@@ -1481,7 +1481,7 @@ function buildTray() {
     { label: 'Open the output folder', click: () => shell.openPath(outputFolder()) },
     { label: 'Check for updates', click: () => { showMain(); notify('open-updates'); checkForUpdates(); } },
     { type: 'separator' },
-    { label: 'Quit', click: () => { quitting = true; app.quit(); } },
+    { label: 'Quit Smart Snap', click: () => { quitting = true; app.quit(); } },
   ]));
   tray.on('click', () => showMain());
 }

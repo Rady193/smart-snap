@@ -1,5 +1,35 @@
 # Release notes
 
+## 1.2.2 — 16 November 2026
+
+In step with the other SCAFFApps apps: Quit Smart Snap, and the keyboard's place shown.
+
+### Downloads
+
+| File | Size | SHA-256 |
+|---|---|---|
+| `Smart-Snap-Setup-1.2.2.exe` | 71.1 MB | `EEC01E2CFE05E2C8C01EFA4D155FEA135706917EAB77107B5D19F8C51E5729AF` |
+| `Smart-Snap-Handbook-1.2.2.pdf` | 3.7 MB | `56DA5995AE32F6DF91AAEC015021FD118C1AFA88065DCE6FD6F1B7525D8E4C2D` |
+
+For 64-bit Windows 10 and 11. Not code-signed, so Windows SmartScreen may ask for confirmation on first run.
+
+### Changed
+
+- **The tray menu's last item is "Quit Smart Snap"**, the way Instant Share and the SCAFFApps Suite name themselves in theirs.
+- **Moving with Tab shows where you are**: a gold ring (purple in the light appearance) round the button or box, as in the other SCAFFApps apps; never on a click.
+- **The appearance button says what it does**: "Switch to light appearance" or "Switch to dark appearance".
+- **The handbook**, `Smart-Snap-Handbook-1.2.2.pdf`: 1.2.1's pages and pictures, with Quit Smart Snap.
+
+### Updating from 1.2.1 or earlier
+
+- Settings > Updates > **Update now**, or **Update** in the SCAFFApps Suite.
+
+### Tested
+
+- The SCAFFApps design-language check: colours, scrollbars, the focus ring, the title bar, the appearance button, the tray menu and its Quit, the shared files.
+- Installed over 1.2.1 on a working computer the way the SCAFFApps Suite updates it (silently, with Windows' permission): Windows lists 1.2.2 and Smart Snap opened again.
+- Microsoft Defender finds nothing in the installer.
+
 ## 1.2.1 — 16 November 2026
 
 The Print Screen key really snaps an area.
