@@ -1,5 +1,42 @@
 # Release notes
 
+## 1.2.0 — 16 November 2026
+
+Print Screen snaps an area, and a pin keeps the window on top.
+
+### Downloads
+
+| File | Size | SHA-256 |
+|---|---|---|
+| `Smart-Snap-Setup-1.2.0.exe` | 78.0 MB | `0F0067B2123725FCF3FE809EA075A1FC28386035A1ACE489F019B829F14CF6C8` |
+| `Smart-Snap-Handbook-1.2.0.pdf` | 3.6 MB | `F97B9327983889790E71621CC9F6A6700B4FD560B39C927A6D4BE245ABF14D96` |
+
+For 64-bit Windows 10 and 11. Not code-signed, so Windows SmartScreen may ask for confirmation on first run.
+
+### Added
+
+- **Print Screen snaps an area**, as Ctrl + Alt + S does, in every program. Windows 11 gives the key to its Snipping Tool first: turn off **Use the Print screen key to open screen capture** in Windows Settings > Accessibility > Keyboard. Smart Snap's Settings says when it is on and opens that page. A switch there leaves the key to Windows or another program.
+- **Keep on top**: the pin in the bar keeps the Smart Snap window above other programs until you click it again, and is remembered. The window is never in a snap: it steps aside while the picture is taken and comes back afterwards.
+
+### Changed
+
+- **The handbook**, `Smart-Snap-Handbook-1.2.0.pdf`, with Print Screen and the pin.
+
+### Updating from 1.1.5
+
+- Settings > Updates > **Update now**, or **Update** in the SCAFFApps Suite.
+
+### Tested
+
+- From the source code in a test profile: Settings finds Windows' Print Screen setting on, and shows its notice; once it is off, the notice goes (the handbook's Settings picture). The switch gives the key back and takes it again. The pin sets and clears "always on top" and is remembered.
+- Pinned, with another program in front: a full-screen snap hides the window while it is taken, and it comes back, still on top.
+- 1.2.0 installed offers a newer version (the handbook's update picture). This installer over 1.1.5 on a working computer, Smart Snap quit from the tray first: installed in 5 seconds, Windows lists 1.2.0, and it starts in the tray again.
+- Microsoft Defender finds nothing in the installer.
+
+### Not tested
+
+- **Print Screen pressed on a keyboard**, and an area snap with the window pinned: while an area is being chosen, Smart Snap takes Esc and Enter for the whole system, so these were not driven on a computer in use. They take the same paths as Ctrl + Alt + S and the full-screen snap above.
+
 ## 1.1.5 — 16 November 2026
 
 Enter saves the comment, the comment box opens at once, Copy as picture in the bar, and sharper snaps.

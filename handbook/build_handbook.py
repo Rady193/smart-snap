@@ -207,7 +207,11 @@ def main_session(work, material, icon, api):
 def update_session(work):
     """A newer version on a stand-in for GitHub: what Settings shows when an update is waiting, from the installed copy
     when there is one (it offers Update now; a copy run from source can only point to the release)."""
-    rel = kit.release(work / "release", "1.2.0", "Smart Snap", "Smart-Snap-Setup-1.2.0.exe")
+    # The example offer: the next minor version, newer than the installed copy even when this release is
+    # installed already (a fixed number, or this version, would then read "You have the latest version").
+    major, minor = VERSION.split(".")[:2]
+    example = f"{major}.{int(minor) + 1}.0"
+    rel = kit.release(work / "release", example, "Smart Snap", f"Smart-Snap-Setup-{example}.exe")
     with kit.Serve(rel) as api:
         env = kit.registration(work / "registration.json", "smart-snap", VERSION)
         env.update(SMART_SNAP_OUTPUT_DIR=str(work / "out"), SMART_SNAP_UPDATE_API=api.url + "latest")
