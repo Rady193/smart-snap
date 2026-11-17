@@ -12,6 +12,8 @@
 #                 (or the folder, for File Explorer)
 #   icon <path>   a program file's own icon as Windows draws it, 64 pixels, as a
 #                 PNG in base64 ("" when the file has none)
+#   copyfile <path>  puts a file on the clipboard, as Explorer's Copy does, so
+#                 it can be pasted into a chat, an email or a folder
 #
 # Positions are in physical screen pixels (the script is DPI-aware).
 param([int]$OwnPid = 0)
@@ -264,6 +266,20 @@ function Get-Info([long]$hwnd) {
   $info
 }
 
+# A file on the clipboard (a file list, as Explorer's Copy leaves it). Another
+# program can hold the clipboard for a moment, so it is tried a few times.
+function Copy-FileToClipboard([string]$file) {
+  if (-not (Test-Path -LiteralPath $file -PathType Leaf)) { return @{ error = 'no such file' } }
+  if (-not $script:formsLoaded) { Add-Type -AssemblyName System.Windows.Forms; $script:formsLoaded = $true }
+  $list = New-Object System.Collections.Specialized.StringCollection
+  [void]$list.Add((Resolve-Path -LiteralPath $file).ProviderPath)
+  for ($i = 0; $i -lt 5; $i++) {
+    try { [System.Windows.Forms.Clipboard]::SetFileDropList($list); return @{ ok = $true } }
+    catch { Start-Sleep -Milliseconds 150 }
+  }
+  @{ error = 'the clipboard is in use' }
+}
+
 [Console]::Out.WriteLine('{"ready":true}')
 [Console]::Out.Flush()
 
@@ -275,6 +291,7 @@ while ($true) {
     if ($line -eq 'snapshot') { $out = Get-Snapshot }
     elseif ($line -match '^info (\d+)$') { $out = Get-Info ([long]$Matches[1]) }
     elseif ($line -match '^icon (.+)$') { $out = @{ png = [SnapNative]::IconPng($Matches[1], 64) } }
+    elseif ($line -match '^copyfile (.+)$') { $out = Copy-FileToClipboard $Matches[1] }
     elseif ($line -eq 'quit') { break }
     else { $out = @{ error = 'unknown command' } }
   } catch {

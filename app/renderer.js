@@ -6,8 +6,15 @@ let snaps = [];
 let selected = null;
 let config = null;
 
-const MODES = { area: 'Area', window: 'Window', full: 'Full screen' };
+const MODES = { area: 'Area', window: 'Window', full: 'Full screen', video: 'Video' };
 const keyText = (k) => k.replace('Control', 'Ctrl').replace('PrintScreen', 'PrtScn').replace(/\+/g, ' + ');
+const isVideo = (s) => !!(s && s.video);
+// A video's length, rounded down as the player shows it.
+const lengthText = (seconds) => {
+  const t = Math.max(0, Math.floor(Number(seconds) || 0));
+  const p = (n) => String(n).padStart(2, '0');
+  return t >= 3600 ? `${Math.floor(t / 3600)}:${p(Math.floor((t % 3600) / 60))}:${p(t % 60)}` : `${Math.floor(t / 60)}:${p(t % 60)}`;
+};
 
 // ---- Appearance -------------------------------------------------------------
 function applyTheme(theme) {
@@ -59,9 +66,16 @@ function drawList() {
   list.replaceChildren(...snaps.map((s, i) => {
     const li = document.createElement('li');
     li.className = s.id === selected ? 'on' : '';
-    li.innerHTML = `<span class="n"></span><img class="thumb" alt=""><div class="t"><div class="a"></div><div class="s"></div><div class="c"></div></div>`;
+    li.innerHTML = `<span class="n"></span><span class="thumbbox"><img class="thumb" alt=""></span><div class="t"><div class="a"></div><div class="s"></div><div class="c"></div></div>`;
     li.querySelector('.n').textContent = i + 1;
     li.querySelector('.thumb').src = s.src;
+    // A video: its first picture, with its length.
+    if (isVideo(s)) {
+      const badge = document.createElement('span');
+      badge.className = 'length';
+      badge.textContent = lengthText(s.video.duration);
+      li.querySelector('.thumbbox').append(badge);
+    }
     const a = li.querySelector('.a');
     if (s.icon) { const img = document.createElement('img'); img.src = s.icon; a.append(img); }
     a.append(s.app.name || 'Unknown application');
@@ -93,7 +107,7 @@ function drawEditor() {
   $('app-title').title = s.app.title || '';
   $('taken').innerHTML = '';
   $('taken').append(new Date(s.time).toLocaleString([], { dateStyle: 'medium', timeStyle: 'medium' }), document.createElement('br'),
-    `${MODES[s.mode] || 'Snap'} · ${s.imgW} × ${s.imgH} px`);
+    isVideo(s) ? `Video · ${lengthText(s.video.duration)} · ${s.imgW} × ${s.imgH} px` : `${MODES[s.mode] || 'Snap'} · ${s.imgW} × ${s.imgH} px`);
   if (document.activeElement !== $('link')) $('link').value = s.url || '';
   $('link-label').textContent = 'Link';
   $('link-open').disabled = !/^https?:\/\//i.test(s.url || '');
@@ -103,8 +117,32 @@ function drawEditor() {
   if (document.activeElement !== $('comment')) $('comment').value = s.text || '';
   $('up-btn').disabled = i <= 0;
   $('down-btn').disabled = i >= snaps.length - 1;
+  // A video plays in place of the picture, and cannot be marked; its buttons
+  // copy its file and show it in its folder.
+  const video = isVideo(s);
+  const missing = video && s.video.missing;
+  $('pic').hidden = video;
+  $('vid').hidden = !video || missing;
+  $('vid-missing').hidden = !missing;
+  $('markbar').hidden = video;
+  $('copy-btn').querySelector('span').textContent = video ? 'Copy video' : 'Copy picture';
+  $('copy-btn').title = video ? 'Copy the video file, to paste into a chat, an email or a folder (Ctrl + C)' : 'Copy the picture (Ctrl + C)';
+  $('copy-btn').disabled = !!missing;
+  $('save-btn').querySelector('span').textContent = video ? 'Show in folder' : 'Save as PNG';
+  $('save-btn').title = video ? 'Show the video file in the Recordings folder' : 'Save the picture in the Screenshots folder';
+  $('save-btn').disabled = !!missing;
+  $('save-btn').querySelector('use').setAttribute('href', video ? '#i-folder' : '#i-save');
+  const vid = $('vid');
+  if (missing) $('vid-missing').textContent = `The video file is no longer at ${s.video.file}. It may have been moved, renamed or deleted.`;
+  if (video && !missing) {
+    if (vid.dataset.id !== s.id) {
+      vid.dataset.id = s.id;
+      vid.poster = s.src;
+      vid.src = s.video.src;
+    }
+  } else releaseVideo();
   const img = $('pic-img');
-  if (img.dataset.id !== s.id) {
+  if (!video && img.dataset.id !== s.id) {
     img.dataset.id = s.id;
     img.src = s.src;
   }
@@ -112,7 +150,7 @@ function drawEditor() {
   drawMark();
 }
 
-// The picture is drawn as large as the stage allows, never above its own size.
+// The picture (or video) is drawn as large as the stage allows, never above its own size.
 function fitPicture() {
   const s = snapById(selected);
   if (!s) return;
@@ -121,9 +159,9 @@ function fitPicture() {
   const maxH = stage.clientHeight - 24;
   // At most one screen pixel per picture pixel, so the picture stays sharp;
   // very small snaps are allowed twice that, so they can be marked.
-  const most = (Math.min(s.imgW, s.imgH) < 300 ? 2 : 1) / devicePixelRatio;
+  const most = (Math.min(s.imgW, s.imgH) < 300 && !isVideo(s) ? 2 : 1) / devicePixelRatio;
   const k = Math.min(maxW / s.imgW, maxH / s.imgH, most);
-  const pic = $('pic');
+  const pic = isVideo(s) ? $('vid') : $('pic');
   pic.style.width = Math.max(1, Math.round(s.imgW * k)) + 'px';
   pic.style.height = Math.max(1, Math.round(s.imgH * k)) + 'px';
 }
@@ -197,39 +235,79 @@ $('link').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('link').
 $('link-open').onclick = () => api.openLink($('link').value.trim());
 
 $('copy-btn').onclick = async () => {
-  if (await api.snaps.copy(selected)) toast('Picture copied.');
+  const copied = await api.snaps.copy(selected);
+  if (copied === 'video') toast('Video copied: paste it into a chat, an email or a folder.');
+  else if (copied) toast('Picture copied.');
+  else if (isVideo(snapById(selected))) toast('The video could not be copied. Try again.', [], true);
 };
 $('save-btn').onclick = async () => {
+  if (isVideo(snapById(selected))) {
+    if (!(await api.snaps.showVideo(selected))) toast('The video file is no longer in its folder.', [], true);
+    return;
+  }
   const file = await api.snaps.save(selected);
   if (file) toast('Saved to the Screenshots folder.', [['Show in folder', () => api.reveal(file)]]);
 };
 $('up-btn').onclick = async () => { await api.snaps.move(selected, -1); refresh(); };
 $('down-btn').onclick = async () => { await api.snaps.move(selected, 1); refresh(); };
+// The player lets go of its file, so the file can be moved to the Recycle Bin.
+function releaseVideo() {
+  const vid = $('vid');
+  if (!vid.dataset.id) return;
+  vid.pause();
+  vid.removeAttribute('src');
+  vid.load();
+  delete vid.dataset.id;
+}
+
 $('delete-btn').onclick = async () => {
   const i = snaps.findIndex((s) => s.id === selected);
+  const video = isVideo(snaps[i]) && !snaps[i].video.missing;
+  releaseVideo();
   await api.snaps.remove(selected);
   const next = snaps[i + 1] || snaps[i - 1];
   selected = next ? next.id : null;
   refresh();
+  if (video) toast('Video deleted. Its file is in the Recycle Bin.');
 };
 $('clear-btn').onclick = async () => {
-  if (!confirm(`Delete all ${snaps.length} screenshots? This cannot be undone.`)) return;
+  const videos = snaps.filter((s) => isVideo(s) && !s.video.missing).length;
+  const question = videos
+    ? `Delete all ${snaps.length} snaps? The screenshots cannot be brought back; ${videos === 1 ? 'the video file goes' : `the ${videos} video files go`} to the Recycle Bin.`
+    : `Delete all ${snaps.length} screenshots? This cannot be undone.`;
+  if (!confirm(question)) return;
+  releaseVideo();
   await api.snaps.clear();
   refresh();
 };
 
 // ---- Snapping ---------------------------------------------------------------
+// (Record takes no delay: its bar has Start, and counts down.)
 for (const b of document.querySelectorAll('.snapbtn')) {
-  b.onclick = () => api.snap(b.dataset.mode, Number($('delay').value) || 0);
+  b.onclick = () => (b.dataset.mode === 'record' ? api.record() : api.snap(b.dataset.mode, Number($('delay').value) || 0));
 }
+
+// While a video is recorded, Record stops it and the snap buttons wait.
+function showRecording(stage) {
+  const live = stage === 'recording' || stage === 'paused';
+  const btn = $('record-btn');
+  btn.classList.toggle('live', live);
+  btn.querySelector('use').setAttribute('href', live ? '#i-stop' : '#i-record');
+  btn.querySelector('span').textContent = live ? 'Stop recording' : 'Record';
+  btn.disabled = !!stage && !live;
+  for (const b of document.querySelectorAll('.snapbtn:not(#record-btn)')) b.disabled = !!stage;
+}
+api.onRecording((state) => showRecording(state && state.stage));
 
 api.onChanged(async (info) => {
   await refresh(info && info.select);
   if (info && info.fresh) $('comment').focus();
 });
 api.onError((message) => toast(message, [], true));
-// Saved with Enter in the comment box: that snap alone is on the clipboard.
-api.onCopied((info) => toast(`Snap ${info.number} copied as a picture: paste it into a chat, an email or a document.`));
+// Saved with Enter in the comment box: that snap alone is on the clipboard, or that video's file.
+api.onCopied((info) => toast(info.video
+  ? `Video ${info.number} copied: paste it into a chat, an email or a folder.`
+  : `Snap ${info.number} copied as a picture: paste it into a chat, an email or a document.`));
 
 // ---- Report -------------------------------------------------------------------
 $('report-btn').onclick = () => {
@@ -269,7 +347,12 @@ $('copy-report-btn').onclick = async () => {
 // The dialog's note; after a copy it says where the report went for a while.
 function reportNote() {
   const marked = snaps.filter((s) => s.text.trim()).length;
-  return `${snaps.length} screenshot${snaps.length === 1 ? '' : 's'}, ${marked} with a comment. They are put in the report in the order shown in the list.`;
+  const videos = snaps.filter(isVideo).length;
+  const pictures = snaps.length - videos;
+  const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+  const counted = [pictures && plural(pictures, 'screenshot'), videos && plural(videos, 'video')].filter(Boolean).join(' and ');
+  return `${counted}, ${marked} with a comment. They are put in the report in the order shown in the list.`
+    + (videos ? ` A video is shown by its first picture, which opens its file in the Recordings folder.` : '');
 }
 function resetCopy() {
   clearTimeout($('r-copy').timer);
@@ -514,7 +597,8 @@ function renderUpdates() {
 
 // ---- Keys ---------------------------------------------------------------------
 addEventListener('keydown', (e) => {
-  const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+  // (The video player uses the arrow keys itself, to go back and forward.)
+  const typing = /^(INPUT|TEXTAREA|SELECT|VIDEO)$/.test(document.activeElement.tagName);
   if (!typing && (e.key === 'ArrowDown' || e.key === 'ArrowUp') && snaps.length) {
     const i = snaps.findIndex((s) => s.id === selected) + (e.key === 'ArrowDown' ? 1 : -1);
     if (snaps[i]) { selected = snaps[i].id; drawList(); drawEditor(); }
@@ -529,6 +613,7 @@ addEventListener('keydown', (e) => {
   config = await api.config();
   showShortcuts();
   showPinned(config.pinned);
+  showRecording(config.recording);
   applyTheme(document.documentElement.dataset.theme || 'dark');
   showUpdate(await api.updates.status());
   api.updates.onStatus(showUpdate);

@@ -15,4 +15,13 @@ contextBridge.exposeInMainWorld('overlay', {
   onApp: (callback) => ipcRenderer.on('overlay-app', (_event, name) => callback(name)),
   // { action: "save" | "open" | "discard", text }
   commentDone: (answer) => ipcRenderer.send('overlay-comment-done', answer),
+  // Recording a video, what the bar beside the area shows: { stage: "ready" |
+  // "starting" | "recording" | "paused", area, sound, countdown }, or
+  // { press: "start" } when Enter is pressed.
+  onRecord: (callback) => ipcRenderer.on('overlay-record', (_event, state) => callback(state)),
+  // "start" (with the sounds chosen, { system, mic }), "cancel", "pause",
+  // "resume", "stop" or "discard".
+  record: (action, sound) => ipcRenderer.send('overlay-record-action', action, sound ? { system: !!sound.system, mic: !!sound.mic } : null),
+  // The mouse is over the bar (true) or elsewhere (false): only the bar takes it while recording.
+  pointer: (overBar) => ipcRenderer.send('overlay-pointer', !!overBar),
 });

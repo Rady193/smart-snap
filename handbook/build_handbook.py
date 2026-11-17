@@ -143,6 +143,42 @@ def overlay_pictures(material):
         b.close()
 
 
+def record_pictures(material):
+    """Recording a video: the app's own selection page (app/overlay.html) over the made-up desktop, an area dragged and
+    let go, with the bar asking for Start, the computer's sound on; then the same area recording, its time running."""
+    from playwright.sync_api import sync_playwright
+    src = "data:image/png;base64," + base64.b64encode(material["desktop"].read_bytes()).decode()
+    with sync_playwright() as p:
+        b = p.chromium.launch(channel="msedge", headless=True)
+        page = b.new_page(viewport={"width": 1600, "height": 900}, device_scale_factor=1.5)
+        # (the page's clock can be put forward, so the time reads as it does a while into a recording)
+        page.add_init_script("(() => { const now = performance.now.bind(performance); window.__ahead = 0;"
+                             " performance.now = () => now() + window.__ahead; })();"
+                             "window.overlay = { onImage: (cb) => { window.__image = cb }, ready: () => {}, done: () => {},"
+                             " onComment: () => {}, onApp: () => {}, commentDone: () => {},"
+                             " onRecord: (cb) => { window.__record = cb }, record: () => {}, pointer: () => {} }")
+        page.goto((ROOT / "app" / "overlay.html").as_uri())
+        page.evaluate("(src) => window.__image({ src, windows: [], purpose: 'record' })", src)
+        page.wait_for_timeout(500)
+        page.evaluate("document.getElementById('shot').draggable = false")
+        page.mouse.move(610, 190)
+        page.mouse.down()
+        page.mouse.move(1000, 450, steps=8)
+        page.mouse.move(1470, 690, steps=12)
+        page.wait_for_timeout(200)
+        page.mouse.up()
+        page.evaluate("window.__record({ stage: 'ready', sound: { system: true, mic: false } })")
+        page.mouse.move(1560, 880)
+        page.wait_for_timeout(400)
+        page.screenshot(path=str(IMG / "record-ready.png"))
+        # recording, in the light appearance (the handbook mixes the two)
+        page.evaluate("document.documentElement.dataset.theme = 'light'")
+        page.evaluate("window.__record({ stage: 'recording', sound: { system: true, mic: false } }); window.__ahead = 42000")
+        page.wait_for_timeout(600)
+        page.screenshot(path=str(IMG / "record-live.png"))
+        b.close()
+
+
 def main_session(work, material, icon, api):
     env = kit.registration(work / "registration.json", "smart-snap", VERSION)
     env.update(SMART_SNAP_OUTPUT_DIR=str(work / "out"), SMART_SNAP_UPDATE_API=api)
@@ -278,7 +314,7 @@ def shots(only=None):
         with kit.Serve(HERE / "demo", 3000) as demo, kit.Serve(current) as api:
             material = sample_material(work, demo.url)
             icon = edge_icon(work)
-            for name, run in [("overlay", lambda: overlay_pictures(material)),
+            for name, run in [("overlay", lambda: overlay_pictures(material)), ("record", lambda: record_pictures(material)),
                               ("main", lambda: main_session(work, material, icon, api.url + "latest")),
                               ("update", lambda: update_session(work)), ("signup", lambda: signup_session(work)),
                               # the back cover, the same in every SCAFFApps handbook: the apps' icons, the Suite's views
@@ -294,7 +330,7 @@ def shots(only=None):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--no-shots", action="store_true")
-    ap.add_argument("--only", nargs="*", help="overlay, main, update, signup, family")
+    ap.add_argument("--only", nargs="*", help="overlay, record, main, update, signup, family")
     ap.add_argument("--preview", action="store_true")
     ap.add_argument("--chromium", help="a Chromium to print with, instead of Edge")
     a = ap.parse_args()

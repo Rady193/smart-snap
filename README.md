@@ -1,8 +1,8 @@
 # Smart Snap
 
-Smart Snap takes screenshots that remember where they came from. Each snap records the application it was taken from, the window title and, for web browsers, the address of the page. Add a comment, mark a spot, and turn all your snaps into one PDF report.
+Smart Snap takes screenshots and screen videos that remember where they came from. Each snap records the application it was taken from, the window title and, for web browsers, the address of the page. Add a comment, mark a spot, and turn all your snaps into one PDF report.
 
-Version 1.2.3 · Windows 10 and 11 (64-bit) · Published by SCAFFApps
+Version 1.3.0 · Windows 10 and 11 (64-bit) · Published by SCAFFApps
 
 The **[handbook](https://github.com/Rady193/smart-snap/releases/latest)** (`Smart-Snap-Handbook-<version>.pdf`, on the Releases page) explains everything, with pictures.
 
@@ -11,6 +11,7 @@ The **[handbook](https://github.com/Rady193/smart-snap/releases/latest)** (`Smar
 - [Install](#install)
 - [Quick start](#quick-start)
 - [Taking a snap](#taking-a-snap)
+- [Recording a video](#recording-a-video)
 - [What each snap records](#what-each-snap-records)
 - [Working on a snap](#working-on-a-snap)
 - [The PDF report](#the-pdf-report)
@@ -24,7 +25,7 @@ The **[handbook](https://github.com/Rady193/smart-snap/releases/latest)** (`Smar
 
 ## Install
 
-Download `Smart-Snap-Setup-1.2.3.exe` from the [Releases page](https://github.com/Rady193/smart-snap/releases/latest) and run it, or install it from the **SCAFFApps Suite**. It installs for everyone on the computer, in `C:\Program Files\SCAFFApps\Smart Snap` unless you choose another folder, so Windows asks for administrator permission once. It adds a desktop shortcut and a Start menu shortcut in the **SCAFFApps** folder, and can be removed from Windows Settings. A copy installed by an earlier version in `C:\Program Files\Smart Snap` moves to the SCAFFApps folder when it updates.
+Download `Smart-Snap-Setup-1.3.0.exe` from the [Releases page](https://github.com/Rady193/smart-snap/releases/latest) and run it, or install it from the **SCAFFApps Suite**. It installs for everyone on the computer, in `C:\Program Files\SCAFFApps\Smart Snap` unless you choose another folder, so Windows asks for administrator permission once. It adds a desktop shortcut and a Start menu shortcut in the **SCAFFApps** folder, and can be removed from Windows Settings. A copy installed by an earlier version in `C:\Program Files\Smart Snap` moves to the SCAFFApps folder when it updates.
 
 Since 1.1.0 Smart Snap is installed, not portable. A portable copy from before cannot update itself to it: install it with the installer once, then delete the portable file.
 
@@ -36,7 +37,7 @@ Everything the app produces goes into one folder that you choose:
 
 A page of the installer titled "Output folder" asks where to save, after you pick the install location. It suggests `Documents\Smart Snap`. (Installed from the SCAFFApps Suite, without the installer's pages, the app asks once, the first time it starts.)
 
-Inside that folder the app keeps two subfolders: `Screenshots` (pictures saved as PNG) and `Reports` (PDF reports). To change the folder, open **Settings** (the sliders icon) and choose **Change…**.
+Inside that folder the app keeps three subfolders: `Screenshots` (pictures saved as PNG), `Reports` (PDF reports) and `Recordings` (videos). To change the folder, open **Settings** (the sliders icon) and choose **Change…**.
 
 ### The first start
 
@@ -79,6 +80,30 @@ The comment can be left empty and written later in Smart Snap. Window and full-s
 
 With more than one monitor, every monitor dims for an area snap and you can drag on any of them. A window spread across two monitors is cut at the edge of the one that shows most of it.
 
+## Recording a video
+
+**Record** in the bar, **Ctrl + Alt + R** anywhere, or **Record a video** in the tray menu. Choose what to record as for an area snap: drag over an area, click a window, or press **Enter** for the whole display. **Esc** cancels.
+
+A bar opens beside the area:
+
+- **Start recording** (or **Enter**) counts down three seconds, then records.
+- **Computer sound** also records the sound the computer plays. **Microphone** records your voice. Both are off until you turn them on; Smart Snap remembers your choice for the next video.
+- **Cancel** (or **Esc**) records nothing.
+
+While it records, the area is outlined in red and the bar shows the time recorded, with **Pause** (then **Resume**), **Stop** and **Discard** (click it twice). The outline, the bar and the countdown are never in the video. The mouse goes through to your programs everywhere except on the bar, so you can work in the area as usual; the mouse pointer is in the video.
+
+**Stop** (or **Ctrl + Alt + R** again, or **Stop recording** in the tray menu) ends it, and the comment box opens beside the area, as after an area snap:
+
+- **Save** (or **Enter**; **Shift + Enter** starts a new line) keeps the video with its comment and copies the video file to the clipboard, to paste into a chat, an email or a folder.
+- **Save and open** keeps it and opens Smart Snap on it.
+- **Discard** (or **Esc**) throws the video away. Its file goes to the Recycle Bin.
+
+The video is an MP4 file (H.264 video and AAC sound, which players, phones and chat apps play) in the `Recordings` folder, named after the application and the time, for example `Microsoft Edge 2026-11-18 14.03.22.mp4`. It records 30 frames a second at the area's own resolution. An area larger than 4096 × 2304 pixels is saved as WebM instead.
+
+The video is also a snap in the list, with what a snap records (below): the application in the middle of the area, its window title and link, and your comment. Its picture in the list and the report is the area as it was when the recording started.
+
+While a video is being recorded, the snap shortcuts and buttons wait until it stops. Quitting Smart Snap while recording saves the video first.
+
 ## What each snap records
 
 | Item | Where it comes from |
@@ -87,7 +112,7 @@ With more than one monitor, every monitor dims for an area snap and you can drag
 | Window | The window's title, as shown in its title bar or taskbar button. |
 | Link | For web browsers, the address in the address bar at the moment of the snap. Works with Chrome, Edge, Brave, Opera, Vivaldi, Firefox and similar browsers. |
 | Folder | For File Explorer, the folder being shown. |
-| Taken | Date and time, the kind of snap, the display, and the picture's size in pixels. |
+| Taken | Date and time, the kind of snap, the display, and the picture's size in pixels. For a video, when it started, and its length. |
 | Program | The program file's location, for telling apart two programs with the same name. |
 
 Chrome and Edge hide `https://` in the address bar. Smart Snap puts it back so the link works; addresses on your own network (`localhost`, `192.168.…`) get `http://`. If the address is wrong or missing, type the right one into the **Link** box. Clearing the box leaves the link out of the report.
@@ -104,6 +129,8 @@ The list on the left holds every snap, numbered in report order. Click one to wo
 - **Up and down arrows** move the snap earlier or later in the report.
 - **Delete** removes the snap. **Clear all** at the top of the list removes every snap after asking.
 
+**A video** plays in place of the picture and has no mark. **Copy video** puts its file on the clipboard (also Ctrl + C), **Show in folder** shows it in the `Recordings` folder, and **Delete** removes it from the list and moves its file to the Recycle Bin.
+
 Snaps are kept until you create a report or delete them, including after closing Smart Snap or restarting the computer, so you can spread the work over several sessions.
 
 ## The PDF report
@@ -118,6 +145,8 @@ The report is A4, with numbered pages. It contains:
 
 1. A cover section with the title, who prepared it, when the snaps were taken, how many, and which applications, followed by a table of every snap: application, page or window, and time. Links in it can be clicked.
 2. One section per snap: the application's icon and name, the window title, your comment, the picture with its mark, a close-up of the marked spot or area, and the details listed under [What each snap records](#what-each-snap-records).
+
+A video is shown by its first picture, with a play sign and its length, and its details name the video file and the sound it has. The picture and the file name are links that open the video. The video stays in the `Recordings` folder (creating the report never removes it), and the link works on this computer: to share the report, send the video with it.
 
 After it is created, choose **Open** or **Show in folder**. Reports are saved in the `Reports` folder.
 
@@ -142,10 +171,12 @@ Smart Snap asks the SCAFFApps website (GitHub if the website does not answer) fo
 | PrtScn | Anywhere | The same (see [Taking a snap](#taking-a-snap) for Windows 11) |
 | Ctrl + Alt + W | Anywhere | Snap the window in front |
 | Ctrl + Alt + F | Anywhere | Snap the full screen |
+| Ctrl + Alt + R | Anywhere | Record a video; while recording, stop it |
 | Esc / right-click | While choosing an area | Cancel |
 | Enter | While choosing an area | Take the whole display |
+| Enter / Esc | While the recording bar asks | Start recording / record nothing |
 | Up / Down | Smart Snap window | Previous or next snap |
-| Ctrl + C | Smart Snap window | Copy the picture |
+| Ctrl + C | Smart Snap window | Copy the picture, or a video's file |
 
 If another program already uses one of the shortcuts, Settings says so; use the buttons or the tray menu for that one.
 
@@ -155,12 +186,13 @@ If another program already uses one of the shortcuts, Settings says so; use the 
 |---|---|
 | Pictures saved with **Save as PNG** | `Screenshots` in your output folder |
 | PDF reports | `Reports` in your output folder |
-| Snaps waiting for a report, with their pictures | `%APPDATA%\Smart Snap\snaps` |
+| Videos | `Recordings` in your output folder |
+| Snaps waiting for a report, with their pictures (a video's file is in `Recordings`) | `%APPDATA%\Smart Snap\snaps` |
 | Settings, including the output folder | `%APPDATA%\Smart Snap\settings.json` |
 | The program | `C:\Program Files\SCAFFApps\Smart Snap` (or the folder you chose) |
 | Your registration (name and e-mail, shared by every SCAFFApps app) | `%APPDATA%\SCAFFApps\registration.json` |
 
-Deleting `%APPDATA%\Smart Snap` resets the app and deletes snaps not yet reported. Reports already created are not affected.
+Deleting `%APPDATA%\Smart Snap` resets the app and deletes snaps not yet reported. Reports and videos already saved are not affected.
 
 ## What it does not do
 
@@ -168,7 +200,9 @@ Deleting `%APPDATA%\Smart Snap` resets the app and deletes snaps not yet reporte
 - **The link is what the address bar shows.** If you were typing in the address bar at the moment of the snap, the typed text is taken instead; a page open in a browser's app mode (no address bar) gives no link. Correct it in the **Link** box.
 - **Other programs' documents.** For programs other than web browsers and File Explorer, the window title is recorded but not the document's file location.
 - **Programs run as administrator.** Their name and icon may be missing when Smart Snap itself is not run as administrator. The picture is taken as normal.
-- **Protected content.** Windows shows some video players, and windows marked as private, as black in every screenshot.
+- **Protected content.** Windows shows some video players, and windows marked as private, as black in every screenshot and video.
+- **A video records the area chosen**, not a window: moving the window does not move the area. A video records one display.
+- **The microphone** needs Windows' permission for desktop apps (Settings > Privacy & security > Microphone). Without it, the video is recorded without your voice, and the bar shows the microphone crossed out in red.
 - **Windows only.** Smart Snap depends on Windows to name the window and read the browser's address.
 
 ## Building from source
@@ -196,12 +230,13 @@ npm run dist
 | Path | Purpose |
 |---|---|
 | `main.js` | Tray, shortcuts, taking pictures of the screens, the area selection windows, keeping the snaps, and building the PDF report. |
-| `windows.ps1` | Runs in the background for the app's lifetime. Lists the windows on screen and, for one window, names its application and reads the address from a browser's address bar (Windows UI Automation). |
+| `windows.ps1` | Runs in the background for the app's lifetime. Lists the windows on screen and, for one window, names its application and reads the address from a browser's address bar (Windows UI Automation). It also puts a video's file on the clipboard. |
 | `preload.js` | The fixed set of functions the app window may call in `main.js`. |
 | `registration.js`, `registration-preload.js`, `app/registration.html` | The name and e-mail registration, the same files in every SCAFFApps Electron app. |
 | `overlay-preload.js` | The same for the area selection windows. |
+| `app/recorder.html`, `app/recorder.js`, `recorder-preload.js` | The recorder, in a window that is never shown: it records the display, keeps the chosen area of each frame, mixes the sounds and encodes the video, handing it to `main.js` a second at a time. |
 | `app/index.html`, `app/style.css`, `app/renderer.js` | The app window. |
-| `app/overlay.html` | The dimmed screen on which an area is chosen: see-through over the live screen, or the frozen picture after a delay. |
+| `app/overlay.html` | The dimmed screen on which an area is chosen: see-through over the live screen, or the frozen picture after a delay. For a video, it then shows the recording bar and the area's outline, and lets the mouse through. |
 | `app/theme-early.js` | Applies the saved light or dark appearance before the window is first drawn. |
 | `handbook/` | `handbook.html`, its pictures, the shared `kit.py`, and `build_handbook.py`, which takes the pictures and prints the handbook to `release\Smart-Snap-Handbook-<version>.pdf`, its only copy: `C:\venvs\studio\Scripts\python.exe handbook\build_handbook.py`. |
 | `build/` | Icon files and the script that draws them, the packaging hook, and `installer.nsh`, the installer page that asks for the output folder and moves an install from the old folder. |

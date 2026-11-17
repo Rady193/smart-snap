@@ -1,6 +1,6 @@
 const {
   app, BrowserWindow, ipcMain, shell, nativeImage, dialog, screen, desktopCapturer,
-  globalShortcut, Tray, Menu, clipboard, net,
+  globalShortcut, Tray, Menu, clipboard, net, session,
 } = require('electron');
 const crypto = require('crypto');
 const os = require('os');
@@ -34,15 +34,16 @@ const SHORTCUTS = {
   area: 'Control+Alt+S',
   window: 'Control+Alt+W',
   full: 'Control+Alt+F',
+  record: 'Control+Alt+R',   // records a video; pressed again, stops it
 };
 // The Print Screen key also snaps an area, unless it is switched off in Settings.
 const PRINT_SCREEN = 'PrintScreen';
-const MODE_NAMES = { area: 'Area', window: 'Window', full: 'Full screen' };
+const MODE_NAMES = { area: 'Area', window: 'Window', full: 'Full screen', video: 'Video' };
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const stamp = () => {
-  const d = new Date();
+const stamp = (time = Date.now()) => {
+  const d = new Date(time);
   const p = (n) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}.${p(d.getMinutes())}.${p(d.getSeconds())}`;
 };
@@ -85,6 +86,7 @@ function saveSettings() {
 const outputFolder = () => loadSettings().outputDir || defaultOutputFolder();
 const outputDir = (kind) => path.join(outputFolder(), kind);
 const reportsDir = () => outputDir('Reports');
+const recordingsDir = () => outputDir('Recordings');
 
 function setOutputFolder(dir) {
   loadSettings().outputDir = dir;
@@ -291,6 +293,7 @@ function windowAt(snapshot, x, y) {
 // meanwhile, the box left out of it, and the answer waits for it if need be.
 let overlays = [];
 let overlayDone = null;     // the selection, while it is being made
+let overlayPurpose = 'snap';  // "snap", or "record" for a video (see Recording a video)
 let commentDone = null;     // the comment box, while it is open
 let commentAnswer = null;   // what the box answers (a promise), from the moment it opens
 
@@ -307,14 +310,14 @@ function endOverlays() {
 }
 
 // Opens the comment box on overlay `o`, with the keyboard (which a live
-// selection never took).
-function openComment(o, area) {
+// selection never took). `video`: the box is for a video just recorded.
+function openComment(o, area, video = false) {
   commentAnswer = new Promise((resolve) => { commentDone = resolve; });
   if (o.live) {
     try { o.win.setFocusable(true); } catch { /* typing may need a click first */ }
     o.win.setSkipTaskbar(true);              // (taking the keyboard would give it a taskbar button)
   }
-  o.win.webContents.send('overlay-comment', { area, number: o.number });
+  o.win.webContents.send('overlay-comment', { area, number: o.number, video });
   o.win.show();
   o.win.focus();
   o.win.webContents.focus();
@@ -332,7 +335,8 @@ function closeOverlays(result) {
     overlays = overlays.filter((o) => o.display.id === result.displayId);
     globalShortcut.unregister('Enter');      // Enter is typed in the comment now
     const o = overlays[0];
-    if (o && (!o.live || LEFT_OUT_OF_CAPTURE)) openComment(o, { x: result.x, y: result.y, w: result.w, h: result.h });
+    // (A video's area gets the recording bar instead, from record().)
+    if (overlayPurpose === 'snap' && o && (!o.live || LEFT_OUT_OF_CAPTURE)) openComment(o, { x: result.x, y: result.y, w: result.w, h: result.h });
   }
   if (done) done(result);
 }
@@ -344,9 +348,12 @@ function finishComment(answer) {
   if (done) done(answer);
 }
 
-// Esc cancels the selection, or discards the snap while its comment is asked.
+// Esc cancels the selection or a video not yet recording, or discards the snap
+// while its comment is asked.
 function escape() {
   if (overlayDone) closeOverlays(null);
+  else if (rec && rec.stage === 'ready') rec.answerStart(null);
+  else if (rec && rec.stage === 'starting') rec.cancelStart();
   else if (commentDone) finishComment({ action: 'discard' });
   else endOverlays();
 }
@@ -395,10 +402,11 @@ function takeWholeDisplay() {
 // selection. `snapshot`: the windows on screen, or a promise of them (live:
 // the outlines appear when it is ready). Resolves to the chosen area in the
 // display's CSS pixels with its `displayId`, or null. `number`: the snap's
-// number, for the comment box.
-function selectArea(screens, snapshot, live, number) {
+// number, for the comment box. `purpose`: "snap", or "record" for a video.
+function selectArea(screens, snapshot, live, number, purpose = 'snap') {
   return new Promise((resolve) => {
     overlayDone = resolve;
+    overlayPurpose = purpose;
     // Esc and Enter work without the keyboard; a live selection never has it.
     try { globalShortcut.register('Escape', escape); } catch { /* the overlay's own Esc still works */ }
     try { globalShortcut.register('Enter', takeWholeDisplay); } catch { /* the overlay's own Enter still works */ }
@@ -423,6 +431,7 @@ function selectArea(screens, snapshot, live, number) {
           scale: d.scaleFactor,
           windows: live ? [] : outlinesOn(snapshot, d, s.phys),
           theme: TITLE_BAR[loadSettings().appTheme] ? loadSettings().appTheme : 'dark',
+          purpose,
         });
       });
       return { win, display: d, live, number, cursorHere: contains(d.bounds, cursor.x, cursor.y) };
@@ -462,9 +471,11 @@ ipcMain.on('overlay-done', (event, result) => {
 // ---- Snaps --------------------------------------------------------------------
 const snapsDir = () => path.join(app.getPath('userData'), 'snaps');
 const snapsFile = () => path.join(snapsDir(), 'snaps.json');
-const snapImage = (id) => path.join(snapsDir(), `${id}.png`);
+const snapImage = (id) => path.join(snapsDir(), `${id}.png`);   // a video's: its first picture
 const snapIcon = (id) => path.join(snapsDir(), `${id}-icon.png`);
+const snapVideoPart = (id) => path.join(snapsDir(), `${id}.video-part`);   // a video while it is recorded
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const VIDEO_FILE = /\.(mp4|webm)$/i;
 
 function readSnaps() {
   try { return JSON.parse(fs.readFileSync(snapsFile(), 'utf8')); } catch { return []; }
@@ -477,6 +488,15 @@ function removeSnapFiles(id) {
   if (!UUID.test(String(id))) return;
   fs.rmSync(snapImage(id), { force: true });
   fs.rmSync(snapIcon(id), { force: true });
+  fs.rmSync(snapVideoPart(id), { force: true });
+}
+
+// A video's file is in the Recordings folder, the only copy: deleting the video
+// in Smart Snap moves it to the Recycle Bin, where it can still be restored.
+async function trashVideo(n) {
+  const file = n && n.video && n.video.file;
+  if (!file || !VIDEO_FILE.test(file) || !fs.existsSync(file)) return;
+  try { await shell.trashItem(file); } catch { /* left where it is */ }
 }
 
 // What an address bar shows is not always a full address: Chrome and Edge hide
@@ -503,6 +523,7 @@ function cleanMark(m) {
 }
 
 let snapping = false;
+let rec = null;   // the video being recorded (see Recording a video)
 let mainWin = null;
 let tray = null;
 
@@ -525,24 +546,19 @@ async function programIcon(exe) {
   return null;
 }
 
-async function storeSnap(image, mode, info, displayName) {
-  const id = crypto.randomUUID();
-  fs.mkdirSync(snapsDir(), { recursive: true });
-  fs.writeFileSync(snapImage(id), image.toPNG());
-  let hasIcon = false;
-  if (info && info.exe) {
-    const icon = await programIcon(info.exe);
-    if (icon) { fs.writeFileSync(snapIcon(id), icon); hasIcon = true; }
-  }
-  const size = image.getSize();
+// The program's icon, saved beside the snap `id`. True when there is one.
+async function storeIcon(id, info) {
+  if (!info || !info.exe) return false;
+  const icon = await programIcon(info.exe);
+  if (!icon) return false;
+  fs.writeFileSync(snapIcon(id), icon);
+  return true;
+}
+
+// What a snap records about where it came from (the helper's `info`, or null).
+function appFields(info) {
   const a = info || {};
-  const snap = {
-    id,
-    time: Date.now(),
-    mode,
-    imgW: size.width,
-    imgH: size.height,
-    display: displayName || '',
+  return {
     app: {
       name: String(a.name || a.process || '').slice(0, 200),
       process: String(a.process || '').slice(0, 200),
@@ -555,6 +571,23 @@ async function storeSnap(image, mode, info, displayName) {
       detectedUrl: String(a.url || '').slice(0, 4000),
     },
     url: normaliseUrl(a.url).slice(0, 4000),
+  };
+}
+
+async function storeSnap(image, mode, info, displayName) {
+  const id = crypto.randomUUID();
+  fs.mkdirSync(snapsDir(), { recursive: true });
+  fs.writeFileSync(snapImage(id), image.toPNG());
+  const hasIcon = await storeIcon(id, info);
+  const size = image.getSize();
+  const snap = {
+    id,
+    time: Date.now(),
+    mode,
+    imgW: size.width,
+    imgH: size.height,
+    display: displayName || '',
+    ...appFields(info),
     text: '',
     mark: null,
     hasIcon,
@@ -570,6 +603,29 @@ function displayLabel(d, index, count) {
   return count > 1 ? `Display ${index + 1}` : 'Display';
 }
 
+// A snap or a video started from Smart Snap's own window must not show that
+// window: it is hidden (`own`). Pinned on top of the program being snapped, it
+// would be in the picture too: it steps aside (`pinned`), and comes back
+// afterwards without taking the focus (comeBack). `settle`: wait until the
+// screen is drawn without it (a live selection takes its picture later, when
+// the window is long gone).
+async function stepAside(settle) {
+  const away = { own: false, pinned: false };
+  if (mainWin && !mainWin.isDestroyed() && mainWin.isVisible() && mainWin.isFocused()) {
+    mainWin.hide();
+    away.own = true;
+  } else if (mainWin && !mainWin.isDestroyed() && mainWin.isAlwaysOnTop() && mainWin.isVisible() && !mainWin.isMinimized()) {
+    mainWin.hide();
+    away.pinned = true;
+  }
+  if (settle && (away.own || away.pinned)) await delay(300);
+  return away;
+}
+
+function comeBack(away) {
+  if (away.pinned && mainWin && !mainWin.isDestroyed() && !mainWin.isVisible()) mainWin.showInactive();
+}
+
 // Takes one snap. `mode` is "area", "window" or "full".
 async function snap(mode, wait = 0) {
   if (snapping || overlayDone) return;
@@ -579,19 +635,7 @@ async function snap(mode, wait = 0) {
   // An area without a delay is chosen on the live screen (see selectArea).
   const live = mode === 'area' && !(wait > 0);
   try {
-    // A snap started from Smart Snap's own window must not show that window.
-    if (mainWin && !mainWin.isDestroyed() && mainWin.isVisible() && mainWin.isFocused()) {
-      mainWin.hide();
-      hidOwn = true;
-      // (A live selection takes its picture later, when the window is long gone.)
-      if (!live) await delay(300);
-    } else if (mainWin && !mainWin.isDestroyed() && mainWin.isAlwaysOnTop() && mainWin.isVisible() && !mainWin.isMinimized()) {
-      // Pinned on top of the program being snapped, it would be in the picture:
-      // it steps aside, and comes back afterwards without taking the focus.
-      mainWin.hide();
-      hidPinned = true;
-      if (!live) await delay(300);
-    }
+    ({ own: hidOwn, pinned: hidPinned } = await stepAside(!live));
     if (wait > 0) await delay(wait * 1000);
 
     let snapshot = ask('snapshot');
@@ -704,7 +748,435 @@ async function snap(mode, wait = 0) {
     commentAnswer = null;
     endOverlays();
     snapping = false;
-    if (hidPinned && mainWin && !mainWin.isDestroyed() && !mainWin.isVisible()) mainWin.showInactive();
+    comeBack({ pinned: hidPinned });
+  }
+}
+
+// ---- Recording a video --------------------------------------------------------
+// The area is chosen as for an area snap (selectArea, "record"): drag an area,
+// click a window, or Enter for the whole display. That display's window then
+// shows a bar beside the area: Start (Enter), the computer's sound, the
+// microphone, Cancel (Esc). Start counts down three seconds while the recorder
+// gets ready, then records until Stop: on the bar, Ctrl+Alt+R or the tray. All
+// the while the window stays over the screen, left out of the video, the area
+// outlined and the bar beside it; the mouse goes through it to the programs
+// underneath, except on the bar. After Stop the comment box opens, as after an
+// area snap, and the video is saved meanwhile in the Recordings folder.
+//
+// The video itself is made in a window that is never shown (app/recorder.html):
+// Chromium records the display, keeps the area of each frame and encodes it as
+// MP4 (H.264, with AAC sound), handing it over a second at a time.
+//
+// `rec.stage`: ready (the bar asks for Start), starting (counting down),
+// recording, paused, stopping, comment (the comment box is open).
+const COUNTDOWN_MS = 3000;
+let recorder = null;            // the recorder window, while it is open
+let quitAfterRecording = false; // quitting waits for the video to be saved
+
+const recordingLive = () => !!rec && (rec.stage === 'recording' || rec.stage === 'paused');
+
+// The recording's state, for the tray and Smart Snap's window.
+function tellRecording() {
+  notify('recording', { stage: rec ? rec.stage : null });
+  if (tray && !tray.isDestroyed()) {
+    tray.setToolTip(recordingLive() ? `${APP_NAME}: recording a video` : APP_NAME);
+    tray.setContextMenu(trayMenu());
+  }
+}
+
+// What the bar beside the area shows: { stage, area, sound, countdown }, or
+// { press: "start" } for Enter.
+function recordBar(state) {
+  if (rec && rec.o && !rec.o.win.isDestroyed()) rec.o.win.webContents.send('overlay-record', state);
+}
+
+// While the video is starting and recording, the overlay lets the mouse
+// through to the programs underneath, except on the bar.
+function passThrough(o, on) {
+  if (!o || o.win.isDestroyed()) return;
+  if (on) o.win.setIgnoreMouseEvents(true, { forward: true });
+  else o.win.setIgnoreMouseEvents(false);
+}
+
+const fromRecordOverlay = (event) => !!rec && !!rec.o && !rec.o.win.isDestroyed() && event.sender === rec.o.win.webContents;
+
+ipcMain.on('overlay-pointer', (event, overBar) => {
+  if (fromRecordOverlay(event) && ['starting', 'recording', 'paused'].includes(rec.stage)) passThrough(rec.o, !overBar);
+});
+
+ipcMain.on('overlay-record-action', (event, action, sound) => {
+  if (!fromRecordOverlay(event)) return;
+  if (rec.stage === 'ready') {
+    if (action === 'start') rec.answerStart({ system: !!(sound && sound.system), mic: !!(sound && sound.mic) });
+    else if (action === 'cancel') rec.answerStart(null);
+  } else if (rec.stage === 'starting') {
+    if (action === 'cancel') rec.cancelStart();
+  } else if (recordingLive()) {
+    if (action === 'pause') pauseRecording(true);
+    else if (action === 'resume') pauseRecording(false);
+    else if (action === 'stop') rec.end('save');
+    else if (action === 'discard') rec.end('discard');
+  }
+});
+
+function pauseRecording(on) {
+  if (!recordingLive() || !recorder || on === (rec.stage === 'paused')) return;
+  recorder.command(on ? 'pause' : 'resume');
+  rec.stage = on ? 'paused' : 'recording';
+  recordBar({ stage: rec.stage });
+  tellRecording();
+}
+
+// The recorder: a window never shown, recording display `source`. `setup`:
+// { crop (fractions of the display), size, fps, system, mic }. Its video is
+// written to the snap's part file as it comes. `ready` resolves to { sound,
+// mime } once it can start; `result` to { duration, width, height, mime, part,
+// bytes } once it has stopped and the file is complete.
+function openRecorder(id, source, setup) {
+  const partition = 'smart-snap-recorder';
+  const ses = session.fromPartition(partition);
+  ses.setDisplayMediaRequestHandler((request, callback) => callback(setup.system && request.audioRequested
+    ? { video: source, audio: 'loopback' } : { video: source }));
+  ses.setPermissionRequestHandler((_wc, permission, callback) => callback(permission === 'media'));
+  ses.setPermissionCheckHandler((_wc, permission) => permission === 'media');
+  fs.mkdirSync(snapsDir(), { recursive: true });
+  const r = { id, part: snapVideoPart(id), bytes: 0, error: null, mime: '' };
+  r.out = fs.createWriteStream(r.part);
+  r.out.on('error', (err) => { r.error = r.error || err; });
+  r.ready = new Promise((resolve, reject) => { r.readyDone = resolve; r.readyFailed = reject; });
+  r.result = new Promise((resolve, reject) => { r.finished = resolve; r.broke = reject; });
+  r.ready.catch(() => {});
+  r.result.catch(() => {});
+  r.win = new BrowserWindow({
+    show: false, width: 320, height: 240, skipTaskbar: true, title: 'Smart Snap recorder',
+    webPreferences: {
+      partition, preload: path.join(__dirname, 'recorder-preload.js'), contextIsolation: true, nodeIntegration: false,
+      // Never shown, it must still run at full speed, and play sound into the video.
+      backgroundThrottling: false, autoplayPolicy: 'no-user-gesture-required',
+    },
+  });
+  r.command = (c) => { if (!r.win.isDestroyed()) r.win.webContents.send('recorder-command', c); };
+  r.win.webContents.once('did-finish-load', () => r.win.webContents.send('recorder-setup', setup));
+  r.win.webContents.on('render-process-gone', () => recorderFailed(r, 'The recorder stopped unexpectedly.'));
+  r.win.loadFile(path.join(__dirname, 'app', 'recorder.html'));
+  recorder = r;
+  return r;
+}
+
+function recorderFailed(r, message) {
+  const err = new Error(message || 'The recorder stopped unexpectedly.');
+  err.recorder = true;
+  r.readyFailed(err);
+  r.broke(err);
+  // While recording, what was recorded so far is kept (rescueVideo).
+  if (recorder === r && recordingLive()) rec.end('failed');
+}
+
+function closeRecorder(r) {
+  if (!r.win.isDestroyed()) r.win.destroy();
+  if (recorder === r) recorder = null;
+  if (!r.out.closed) r.out.destroy();
+  // Saved, it has been moved away; otherwise it is not wanted.
+  setTimeout(() => fs.rm(r.part, { force: true }, () => {}), 500);
+}
+
+const fromRecorder = (event) => !!recorder && !recorder.win.isDestroyed() && event.sender === recorder.win.webContents;
+
+ipcMain.on('recorder-ready', (event, info) => {
+  if (!fromRecorder(event)) return;
+  recorder.mime = String((info && info.mime) || '');
+  recorder.readyDone(info || {});
+});
+ipcMain.on('recorder-chunk', (event, bytes) => {
+  if (!fromRecorder(event) || !bytes) return;
+  const chunk = Buffer.from(bytes);
+  recorder.bytes += chunk.length;
+  recorder.out.write(chunk);
+});
+ipcMain.on('recorder-done', (event, info) => {
+  if (!fromRecorder(event)) return;
+  const r = recorder;
+  const a = info || {};
+  r.out.end(() => (r.error ? r.broke(r.error) : r.finished({
+    duration: Math.max(0, Number(a.duration) || 0),
+    width: Math.round(Number(a.width) || 0),
+    height: Math.round(Number(a.height) || 0),
+    mime: String(a.mime || r.mime || ''),
+    part: r.part,
+    bytes: r.bytes,
+  })));
+});
+ipcMain.on('recorder-failed', (event, message) => { if (fromRecorder(event)) recorderFailed(recorder, String(message || '')); });
+// The display stopped being recorded (it was unplugged): the video ends there.
+ipcMain.on('recorder-ended', (event) => { if (fromRecorder(event) && recordingLive()) rec.end('save'); });
+
+// The area to record, in physical pixels: at least 64 each way (grown around
+// its middle), inside its display, and an even number of pixels each way, as
+// the video encoder needs.
+function recordRect(phys, picked, k) {
+  const even = (v) => Math.floor(v / 2) * 2;
+  const w = Math.min(phys.width, Math.max(64, Math.round(picked.w * k)));
+  const h = Math.min(phys.height, Math.max(64, Math.round(picked.h * k)));
+  let x = Math.round(phys.x + picked.x * k + (picked.w * k - w) / 2);
+  let y = Math.round(phys.y + picked.y * k + (picked.h * k - h) / 2);
+  x = Math.min(phys.x + phys.width - w, Math.max(phys.x, x));
+  y = Math.min(phys.y + phys.height - h, Math.max(phys.y, y));
+  return { x: phys.x + even(x - phys.x), y: phys.y + even(y - phys.y), width: even(w), height: even(h) };
+}
+
+// The video's picture in the list and the report: the area as it was when the
+// recording started, taken as a snap is.
+async function takePoster(d, monitors, rect) {
+  try {
+    await delay(150);
+    const shot = (await captureDisplays(monitors, [d.id])).find((s) => s.display.id === d.id);
+    return shot ? cropPhysical(shot, rect) : null;
+  } catch { return null; }
+}
+
+// A plain dark picture the video's shape, for when none could be taken.
+function blankPicture(w, h) {
+  const k = Math.max(w, h, 1) / 64;
+  const bw = Math.max(2, Math.round(w / k));
+  const bh = Math.max(2, Math.round(h / k));
+  const pixels = Buffer.alloc(bw * bh * 4, 0x24);
+  for (let i = 3; i < pixels.length; i += 4) pixels[i] = 0xff;
+  return nativeImage.createFromBitmap(pixels, { width: bw, height: bh });
+}
+
+// A video's length in whole seconds, rounded down as video players show it.
+const durationText = (seconds) => {
+  const s = Math.max(0, Math.floor(Number(seconds) || 0));
+  const p = (n) => String(n).padStart(2, '0');
+  const h = Math.floor(s / 3600);
+  return h ? `${h}:${p(Math.floor((s % 3600) / 60))}:${p(s % 60)}` : `${Math.floor(s / 60)}:${p(s % 60)}`;
+};
+
+// A new file in the Recordings folder, named after the application and time.
+function recordingFile(appName, time, ext) {
+  const dir = recordingsDir();
+  fs.mkdirSync(dir, { recursive: true });
+  const base = `${safeName(appName, 'Recording')} ${stamp(time)}`;
+  for (let i = 1; ; i++) {
+    const file = path.join(dir, `${base}${i > 1 ? ` (${i})` : ''}.${ext}`);
+    if (!fs.existsSync(file)) return file;
+  }
+}
+
+function moveFile(from, to) {
+  try { fs.renameSync(from, to); } catch (err) {
+    if (err.code !== 'EXDEV') throw err;
+    fs.copyFileSync(from, to);       // (another drive)
+    fs.rmSync(from, { force: true });
+  }
+}
+
+const videoExt = (mime) => (/webm/i.test(mime) ? 'webm' : 'mp4');
+
+// Keeps the finished video as a snap: its file in the Recordings folder, its
+// first picture and the program's icon beside the snaps.
+async function storeVideo(id, done, c) {
+  const file = recordingFile(c.info && (c.info.name || c.info.process), c.time, videoExt(done.mime));
+  moveFile(done.part, file);
+  const picture = c.poster && !c.poster.isEmpty() ? c.poster : blankPicture(done.width, done.height);
+  fs.writeFileSync(snapImage(id), picture.toPNG());
+  const hasIcon = await storeIcon(id, c.info);
+  const snap = {
+    id,
+    time: c.time,
+    mode: 'video',
+    imgW: done.width || picture.getSize().width,
+    imgH: done.height || picture.getSize().height,
+    display: c.displayName || '',
+    ...appFields(c.info),
+    text: '',
+    mark: null,
+    hasIcon,
+    video: { file, duration: Math.floor(done.duration * 10) / 10, bytes: done.bytes, sound: { system: !!c.sound.system, mic: !!c.sound.mic } },
+  };
+  const list = readSnaps();
+  list.push(snap);
+  writeSnaps(list);
+  return snap;
+}
+
+// When the recording breaks off, what was recorded is kept in the Recordings
+// folder (the video so far plays). True when there was something to keep.
+async function rescueVideo(r) {
+  try {
+    if (!r.bytes || !fs.existsSync(r.part)) return false;
+    if (!r.out.closed) await new Promise((resolve) => r.out.end(resolve));
+    moveFile(r.part, recordingFile('', Date.now(), videoExt(r.mime)));
+    return true;
+  } catch { return false; }
+}
+
+// A video on the clipboard as a file, as Explorer's Copy leaves it, to paste
+// into a chat, an email or a folder.
+async function copyVideo(n) {
+  if (!n || !n.video || !fs.existsSync(n.video.file)) return false;
+  const answer = await ask(`copyfile ${n.video.file}`, 8000);
+  return !!(answer && answer.ok);
+}
+
+function recordError(err, kept) {
+  const text = String((err && err.message) || err || '');
+  let message;
+  if (/NotAllowed|Permission/i.test(text)) message = 'Windows did not let Smart Snap record the screen.';
+  else if (/timed out/i.test(text)) message = 'The recording did not start. Try again.';
+  else message = `The video could not be recorded. ${text}`.trim();
+  return kept ? `${message} What was recorded until then is in the Recordings folder.` : message;
+}
+
+// Records a video. While one is being recorded, the same (the shortcut, the
+// tray's item, Record in the window) stops it; while its bar asks, starts it.
+async function record() {
+  if (rec) {
+    if (rec.stage === 'ready') recordBar({ press: 'start' });   // the bar answers, with the sound chosen
+    else if (recordingLive()) rec.end('save');
+    return;
+  }
+  if (snapping || overlayDone) return;
+  snapping = true;
+  let away = { own: false, pinned: false };
+  let r = null;
+  try {
+    away = await stepAside(false);
+    let snapshot = ask('snapshot');
+    const screens = screen.getAllDisplays().map((d) => ({ display: d, phys: physicalBounds(d), image: null }));
+    const picked = await selectArea(screens, snapshot, true, readSnaps().length + 1, 'record');
+    const o = picked && overlays.find((x) => x.display.id === picked.displayId && !x.win.isDestroyed());
+    if (!o) { if (away.own) showMain(); return; }
+
+    // The bar asks for Start. Esc (still the selection's) and Enter answer it.
+    rec = { stage: 'ready', o };
+    const started = new Promise((resolve) => { rec.answerStart = (v) => { rec.answerStart = () => {}; resolve(v); }; });
+    rec.cancelStart = () => {};
+    rec.end = () => {};
+    try { globalShortcut.register('Enter', () => record()); } catch { /* the bar's button still works */ }
+    snapshot = await snapshot;
+    const d = o.display;
+    const k = d.scaleFactor;
+    const phys = exactPhys(d, snapshot && snapshot.monitors);
+    const rect = recordRect(phys, picked, k);
+    const area = { x: (rect.x - phys.x) / k, y: (rect.y - phys.y) / k, w: rect.width / k, h: rect.height / k };
+    const hwnd = picked.hwnd || (windowAt(snapshot, rect.x + rect.width / 2, rect.y + rect.height / 2) || {}).hwnd || 0;
+    const info = hwnd ? ask(`info ${hwnd}`) : Promise.resolve(null);
+    const all = screen.getAllDisplays();
+    const displayName = displayLabel(d, all.findIndex((x) => x.id === d.id), all.length);
+    const s = loadSettings();
+    recordBar({ stage: 'ready', area, sound: { system: !!s.recordSystemSound, mic: !!s.recordMic } });
+    tellRecording();
+    const sound = await started;
+    globalShortcut.unregister('Enter');
+    if (!sound) { if (away.own) showMain(); return; }
+    if (s.recordSystemSound !== sound.system || s.recordMic !== sound.mic) {
+      s.recordSystemSound = sound.system;
+      s.recordMic = sound.mic;
+      saveSettings();
+    }
+
+    // Counting down, while the recorder gets ready. Esc or Cancel still stop it.
+    rec.stage = 'starting';
+    const cancelled = new Promise((resolve) => { rec.cancelStart = () => resolve(null); });
+    passThrough(o, true);
+    recordBar({ stage: 'starting', countdown: COUNTDOWN_MS });
+    tellRecording();
+    const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 0, height: 0 } });
+    const source = sources.find((x) => x.display_id === String(d.id)) || sources[all.findIndex((x) => x.id === d.id)];
+    if (!source) throw new Error('Windows did not offer this display for recording.');
+    r = openRecorder(crypto.randomUUID(), source, {
+      crop: { x: (rect.x - phys.x) / phys.width, y: (rect.y - phys.y) / phys.height, w: rect.width / phys.width, h: rect.height / phys.height },
+      size: { width: rect.width, height: rect.height },
+      fps: 30,
+      system: sound.system,
+      mic: sound.mic,
+    });
+    const go = await Promise.race([
+      Promise.all([withTimeout(r.ready, 20000), delay(COUNTDOWN_MS)]).then(([ready]) => ready),
+      cancelled,
+    ]);
+    globalShortcut.unregister('Escape');     // from now on Esc belongs to the programs being recorded
+    if (!go) { if (away.own) showMain(); return; }
+
+    const ended = new Promise((resolve) => { rec.end = (how) => { rec.end = () => {}; resolve(how); }; });
+    // Before Windows 10 2004 the overlay would show black in the video: it is
+    // hidden instead, and the shortcut or the tray stops the recording.
+    if (!LEFT_OUT_OF_CAPTURE) o.win.hide();
+    r.command('start');
+    const time = Date.now();
+    rec.stage = 'recording';
+    recordBar({ stage: 'recording', sound: go.sound || {} });
+    tellRecording();
+    const poster = takePoster(d, snapshot && snapshot.monitors, rect);
+
+    const how = await ended;
+    rec.stage = 'stopping';
+    tellRecording();
+    r.command('stop');
+    if (how === 'discard') {
+      await withTimeout(r.result, 10000).catch(() => {});
+      if (away.own) showMain();
+      return;                                  // (the part file is removed with the recorder)
+    }
+    if (how === 'failed') throw await r.result.then(() => new Error('The recorder stopped unexpectedly.'), (err) => err);
+
+    // The comment box opens at once; the video is saved meanwhile.
+    const storing = (async () => {
+      const done = await withTimeout(r.result, 60000);
+      const facts = await info;
+      return storeVideo(r.id, done, { time, info: facts && !facts.error ? facts : null, displayName, poster: await poster, sound: go.sound || {} });
+    })();
+    storing.catch(() => {});
+    let answer = { action: 'save', text: '', quiet: true };
+    if (how !== 'quit' && !quitAfterRecording && !o.win.isDestroyed()) {
+      rec.stage = 'comment';
+      tellRecording();
+      storing.then((v) => tellCommentApp(v.app.name), () => {});
+      passThrough(o, false);
+      if (!LEFT_OUT_OF_CAPTURE) o.win.showInactive();
+      openComment(o, area, true);
+      answer = await commentAnswer;
+    }
+    const saved = await storing;
+    if (answer.action === 'discard') {
+      writeSnaps(readSnaps().filter((n) => n.id !== saved.id));
+      removeSnapFiles(saved.id);
+      await trashVideo(saved);
+      notify('snaps-changed', {});
+      if (away.own) showMain();
+      return;
+    }
+    if (answer.text.trim()) {
+      const list = readSnaps();
+      const n = list.find((x) => x.id === saved.id);
+      if (n) { n.text = answer.text; writeSnaps(list); }
+    }
+    // Saved with Enter (or Save): the video goes on the clipboard as a file.
+    if (answer.action === 'save' && !answer.quiet) {
+      const number = readSnaps().findIndex((n) => n.id === saved.id) + 1;
+      copyVideo(saved).then((ok) => (ok
+        ? notify('snap-copied', { number, video: true })
+        : notify('snap-error', `Video ${number} is saved, but it could not be copied. Copy video in Smart Snap copies it.`)));
+    }
+    notify('snaps-changed', { select: saved.id, fresh: answer.action === 'open' });
+    if (answer.action === 'open' || away.own) showMain();
+  } catch (err) {
+    endOverlays();
+    const kept = !!r && await rescueVideo(r);
+    showMain();
+    notify('snap-error', recordError(err, kept));
+  } finally {
+    globalShortcut.unregister('Enter');
+    if (r) closeRecorder(r);
+    commentDone = null;
+    commentAnswer = null;
+    endOverlays();
+    rec = null;
+    snapping = false;
+    tellRecording();
+    comeBack(away);
+    if (quitAfterRecording) { quitting = true; app.quit(); }
   }
 }
 
@@ -759,9 +1231,13 @@ function snapHtml(n, number) {
   // Small snaps are not blown up beyond about their size on screen.
   const naturalW = n.imgW * 0.2;
   if (w > naturalW && naturalW > 40) { w = naturalW; h = w / ratio; }
-  const mark = n.mark ? markHtml(n.mark, number, { x: 0, y: 0, w: 1, h: 1 }) : '';
+  const v = n.video;
+  const videoUrl = v && v.file ? pathToFileURL(v.file).href : '';
+  // A video: its first picture, with a play sign and its length, opening the file.
+  const mark = v ? `<a class="play" href="${esc(videoUrl)}"><span></span></a><span class="length">${esc(durationText(v.duration))}</span>`
+    : n.mark ? markHtml(n.mark, number, { x: 0, y: 0, w: 1, h: 1 }) : '';
   let detail = '';
-  if (n.mark) {
+  if (n.mark && !v) {
     const c = closeUp(n);
     const aspect = (c.w * n.imgW) / (c.h * n.imgH);
     let dw = 66; let dh = dw / aspect;
@@ -769,18 +1245,20 @@ function snapHtml(n, number) {
     detail = `<div class="detail"><div class="img" style="width:${dw.toFixed(1)}mm;height:${dh.toFixed(1)}mm"><img src="${src}" style="left:${pct(-c.x / c.w)};top:${pct(-c.y / c.h)};width:${pct(1 / c.w)};height:${pct(1 / c.h)}">${markHtml(n.mark, number, c)}</div><div class="cap">Close-up of the marked ${n.mark.type === 'area' ? 'area' : 'spot'}</div></div>`;
   }
   const icon = n.hasIcon && fs.existsSync(snapIcon(n.id)) ? `<img class="appicon" src="${pathToFileURL(snapIcon(n.id)).href}">` : '';
+  const sounds = v && v.sound ? [v.sound.system && 'the computer', v.sound.mic && 'the microphone'].filter(Boolean) : [];
   const rows = [
     ['Application', esc(appLine(a))],
     a.title ? ['Window', esc(a.title)] : null,
     n.url ? ['Link', linkHtml(n.url)] : null,
     !n.url && a.location ? ['Folder', esc(a.location)] : null,
-    ['Taken', esc(`${new Date(n.time).toLocaleString([], { dateStyle: 'medium', timeStyle: 'medium' })} · ${MODE_NAMES[n.mode] || 'Snap'}${n.display ? ` on ${n.display}` : ''} · ${n.imgW} × ${n.imgH} px`)],
+    v ? ['Video', `<a href="${esc(videoUrl)}">${esc(path.basename(v.file))}</a> · ${esc(durationText(v.duration))} · ${sounds.length ? `sound from ${esc(sounds.join(' and '))}` : 'no sound'}`] : null,
+    [v ? 'Recorded' : 'Taken', esc(`${new Date(n.time).toLocaleString([], { dateStyle: 'medium', timeStyle: 'medium' })} · ${MODE_NAMES[n.mode] || 'Snap'}${n.display ? ` on ${n.display}` : ''} · ${n.imgW} × ${n.imgH} px`)],
     a.exe ? ['Program', esc(a.exe)] : null,
-  ].filter(Boolean).map(([k, v]) => `<tr><th>${k}</th><td>${v}</td></tr>`).join('');
+  ].filter(Boolean).map(([k, val]) => `<tr><th>${k}</th><td>${val}</td></tr>`).join('');
   return `<section class="snap">
   <div class="head"><span class="num">${number}</span>${icon}<div class="who"><b>${esc(a.name || a.process || 'Unknown application')}</b><span>${esc(a.title || '')}</span></div></div>
   ${n.text ? `<p class="text">${esc(n.text).replace(/\n/g, '<br>')}</p>` : ''}
-  <div class="img shot" style="width:${w.toFixed(1)}mm;height:${h.toFixed(1)}mm"><img src="${src}" style="width:100%;height:100%">${mark}</div>
+  <div class="img shot${v ? ' video' : ''}" style="width:${w.toFixed(1)}mm;height:${h.toFixed(1)}mm"><img src="${src}" style="width:100%;height:100%">${mark}</div>
   <div class="facts">${detail}<table class="meta">${rows}</table></div>
 </section>`;
 }
@@ -794,8 +1272,14 @@ function reportHtml(list, opts) {
   const summary = list.map((n, i) => {
     const a = n.app || {};
     const where = n.url ? linkHtml(n.url) : esc(a.location || a.title || '');
-    return `<tr><td class="n">${i + 1}</td><td>${esc(a.name || a.process || 'Unknown')}</td><td class="where">${where}</td><td>${esc(new Date(n.time).toLocaleTimeString([], { timeStyle: 'short' }))}</td></tr>`;
+    const tag = n.video ? ` <span class="tag">Video ${esc(durationText(n.video.duration))}</span>` : '';
+    return `<tr><td class="n">${i + 1}</td><td>${esc(a.name || a.process || 'Unknown')}${tag}</td><td class="where">${where}</td><td>${esc(new Date(n.time).toLocaleTimeString([], { timeStyle: 'short' }))}</td></tr>`;
   }).join('');
+  const videos = list.filter((n) => n.video).length;
+  const plural = (count, word) => `${count} ${word}${count === 1 ? '' : 's'}`;
+  const counted = videos
+    ? `<div class="wide"><b>Snaps</b>${[list.length - videos && plural(list.length - videos, 'screenshot'), plural(videos, 'video')].filter(Boolean).join(', ')}</div>`
+    : `<div><b>Screenshots</b>${list.length}</div>`;
   const first = Math.min(...list.map((n) => n.time));
   const last = Math.max(...list.map((n) => n.time));
   const fmt = (t) => new Date(t).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
@@ -842,6 +1326,11 @@ function reportHtml(list, opts) {
   .mark.point::before { content: ""; position: absolute; left: -5mm; top: -5mm; width: 10mm; height: 10mm; border: .7mm solid #e5484d; border-radius: 50%; background: rgba(229, 72, 77, .12); }
   .mark span { display: inline-grid; place-items: center; min-width: 5mm; height: 5mm; padding: 0 1mm; color: #fff; background: #e5484d; border-radius: 2.5mm; font-size: 8pt; font-weight: 700; line-height: 1; }
   .mark.point span { position: absolute; left: 3mm; top: -8mm; }
+  .sum .tag { margin-left: 1mm; padding: 0 1.2mm; color: #5b2c83; background: #f1ebf6; border-radius: 1mm; font-size: 7.5pt; font-weight: 600; white-space: nowrap; }
+  .shot.video .play { position: absolute; inset: 0; display: grid; place-items: center; }
+  .shot.video .play span { width: 15mm; height: 15mm; border-radius: 50%; background: rgba(23, 20, 28, .62); box-shadow: 0 0 0 .5mm rgba(255, 255, 255, .8); }
+  .shot.video .play span::before { content: ""; display: block; margin: 4.3mm 0 0 5.6mm; border-style: solid; border-width: 3.2mm 0 3.2mm 5.2mm; border-color: transparent transparent transparent #fff; }
+  .shot.video .length { position: absolute; right: 2mm; bottom: 2mm; padding: .4mm 1.6mm; color: #fff; background: rgba(23, 20, 28, .75); border-radius: 1mm; font-size: 8pt; font-weight: 600; }
   ${opts.picture ? 'html { background: #fff; scrollbar-width: none; } body { padding: 12mm 14mm 9mm; } .snap:last-child { margin-bottom: 0; }' : ''}
   ${opts.single ? 'body { padding: 6mm 8mm; }' : ''}
 </style></head><body>
@@ -851,7 +1340,7 @@ ${opts.single ? snapHtml(list[0], opts.number || 1) : `<header>
   <div class="cards">
     ${opts.author ? `<div><b>Prepared by</b>${esc(opts.author)}</div>` : ''}
     <div class="wide"><b>Taken</b>${esc(period)}</div>
-    <div><b>Screenshots</b>${list.length}</div>
+    ${counted}
     <div class="wide"><b>Applications</b>${esc(apps.join(', '))}</div>
   </div>
   <table class="sum"><tr><th>#</th><th>Application</th><th>Page, window or folder</th><th>Time</th></tr>${summary}</table>
@@ -1004,6 +1493,7 @@ ipcMain.handle('config', async () => ({
   author: loadSettings().author || '',
   startWithWindows: app.getLoginItemSettings().openAtLogin,
   keepAfterReport: !!loadSettings().keepAfterReport,
+  recording: rec ? rec.stage : null,
   version: app.getVersion(),
   platform: process.platform,
 }));
@@ -1013,10 +1503,14 @@ ipcMain.handle('snap', (_e, mode, wait) => {
   snap(mode, Math.min(30, Math.max(0, Number(wait) || 0)));
 });
 
+// Record a video, or stop the one being recorded.
+ipcMain.handle('record', () => { record(); });
+
 ipcMain.handle('snaps-list', () => readSnaps().map((n) => ({
   ...n,
   src: pathToFileURL(snapImage(n.id)).href,
   icon: n.hasIcon ? pathToFileURL(snapIcon(n.id)).href : null,
+  video: n.video ? { ...n.video, src: pathToFileURL(n.video.file).href, missing: !fs.existsSync(n.video.file) } : null,
 })));
 
 ipcMain.handle('snaps-update', (_e, id, change) => {
@@ -1040,19 +1534,35 @@ ipcMain.handle('snaps-move', (_e, id, step) => {
   return true;
 });
 
-ipcMain.handle('snaps-delete', (_e, id) => {
-  writeSnaps(readSnaps().filter((n) => n.id !== id));
+ipcMain.handle('snaps-delete', async (_e, id) => {
+  const list = readSnaps();
+  writeSnaps(list.filter((n) => n.id !== id));
   removeSnapFiles(String(id));
+  await trashVideo(list.find((n) => n.id === id));
 });
 
-ipcMain.handle('snaps-clear', () => {
-  for (const n of readSnaps()) removeSnapFiles(n.id);
+ipcMain.handle('snaps-clear', async () => {
+  const list = readSnaps();
+  for (const n of list) removeSnapFiles(n.id);
   writeSnaps([]);
+  for (const n of list) await trashVideo(n);
 });
 
-ipcMain.handle('snaps-copy', (_e, id) => {
+// A screenshot goes on the clipboard as a picture ("picture"), a video as its
+// file ("video").
+ipcMain.handle('snaps-copy', async (_e, id) => {
+  const n = readSnaps().find((x) => x.id === id);
+  if (n && n.video) return (await copyVideo(n)) ? 'video' : false;
   if (!UUID.test(String(id)) || !fs.existsSync(snapImage(id))) return false;
   clipboard.writeImage(nativeImage.createFromPath(snapImage(id)));
+  return 'picture';
+});
+
+// A video's file, shown in its folder.
+ipcMain.handle('snaps-show-video', (_e, id) => {
+  const n = readSnaps().find((x) => x.id === id);
+  if (!n || !n.video || !fs.existsSync(n.video.file)) return false;
+  shell.showItemInFolder(n.video.file);
   return true;
 });
 
@@ -1467,7 +1977,8 @@ let toldAboutTray = false;
 function createMain() {
   const colors = TITLE_BAR[loadSettings().appTheme] || TITLE_BAR.dark;
   const area = screen.getPrimaryDisplay().workArea;
-  const width = Math.min(1280, area.width - 40);
+  // Wide enough for the toolbar to show its shortcuts (1343 px), where the screen allows.
+  const width = Math.min(1400, area.width - 40);
   const height = Math.min(860, area.height - 40);
   mainWin = new BrowserWindow({
     x: Math.round(area.x + (area.width - width) / 2),
@@ -1516,23 +2027,32 @@ function showMain() {
   if (!loadSettings().outputDir) ensureOutputFolder(mainWin);
 }
 
-function buildTray() {
-  const image = nativeImage.createFromPath(ICON).resize({ width: 32, height: 32, quality: 'best' });
-  tray = new Tray(image);
-  tray.setToolTip(APP_NAME);
+// While a video is recorded, its item stops it and the snaps wait.
+function trayMenu() {
   const key = (k) => k.replace('Control', 'Ctrl');
-  tray.setContextMenu(Menu.buildFromTemplate([
-    { label: 'Snap an area', accelerator: key(SHORTCUTS.area), click: () => snap('area', 0.3) },
-    { label: 'Snap the window in front', accelerator: key(SHORTCUTS.window), click: () => snap('window', 0.3) },
-    { label: 'Snap the full screen', accelerator: key(SHORTCUTS.full), click: () => snap('full', 0.3) },
-    { label: 'Snap an area in 5 seconds', click: () => snap('area', 5) },
+  const idle = !rec;
+  return Menu.buildFromTemplate([
+    { label: 'Snap an area', accelerator: key(SHORTCUTS.area), click: () => snap('area', 0.3), enabled: idle },
+    { label: 'Snap the window in front', accelerator: key(SHORTCUTS.window), click: () => snap('window', 0.3), enabled: idle },
+    { label: 'Snap the full screen', accelerator: key(SHORTCUTS.full), click: () => snap('full', 0.3), enabled: idle },
+    { label: 'Snap an area in 5 seconds', click: () => snap('area', 5), enabled: idle },
+    recordingLive()
+      ? { label: 'Stop recording', accelerator: key(SHORTCUTS.record), click: () => { if (recordingLive()) rec.end('save'); } }
+      : { label: 'Record a video', accelerator: key(SHORTCUTS.record), click: () => record(), enabled: idle },
     { type: 'separator' },
     { label: 'Open Smart Snap', click: () => showMain() },
     { label: 'Open the output folder', click: () => shell.openPath(outputFolder()) },
     { label: 'Check for updates', click: () => { showMain(); notify('open-updates'); checkForUpdates(); } },
     { type: 'separator' },
     { label: 'Quit Smart Snap', click: () => { quitting = true; app.quit(); } },
-  ]));
+  ]);
+}
+
+function buildTray() {
+  const image = nativeImage.createFromPath(ICON).resize({ width: 32, height: 32, quality: 'best' });
+  tray = new Tray(image);
+  tray.setToolTip(APP_NAME);
+  tray.setContextMenu(trayMenu());
   tray.on('click', () => showMain());
 }
 
@@ -1542,7 +2062,7 @@ function registerShortcuts() {
   shortcutProblems = [];
   for (const [mode, keys] of Object.entries(SHORTCUTS)) {
     let ok = false;
-    try { ok = globalShortcut.register(keys, () => snap(mode)); } catch { ok = false; }
+    try { ok = globalShortcut.register(keys, () => (mode === 'record' ? record() : snap(mode))); } catch { ok = false; }
     if (!ok) shortcutProblems.push(keys);
   }
   if (loadSettings().printScreen !== false) { printScreenRetries = 0; startPrintScreen(); }
@@ -1642,7 +2162,18 @@ if (app.hasSingleInstanceLock()) {
   });
 }
 
-app.on('before-quit', () => { quitting = true; });
+app.on('before-quit', (e) => {
+  quitting = true;
+  // A video being recorded is saved first, without asking for its comment
+  // (record() quits once it is saved); one whose comment is being written is
+  // saved with what it has.
+  if (rec && !quitAfterRecording && ['recording', 'paused', 'stopping', 'comment'].includes(rec.stage)) {
+    e.preventDefault();
+    quitAfterRecording = true;
+    if (recordingLive()) rec.end('quit');
+    else if (rec.stage === 'comment' && commentDone) finishComment({ action: 'save', text: '', quiet: true });
+  }
+});
 app.on('will-quit', () => {
   globalShortcut.unregisterAll();
   stopPrintScreen();

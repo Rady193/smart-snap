@@ -52,6 +52,41 @@
   #card button.primary { color: #fff; background: var(--primary); border-color: var(--primary); }
   #card button.primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
   #card button:disabled { opacity: .5; cursor: default; }
+
+  /* Recording a video: the area outlined in red, the outside dimmed lightly, the
+     bar beside it. None of it is in the video (Windows leaves this window out). */
+  body.chosen, body.chosen * { cursor: default; }
+  body.chosen #hint, body.chosen #size { display: none !important; }
+  body.recording .dim { background: rgba(8, 10, 16, .22); }
+  #box.rec { outline-color: #e5484d; box-shadow: none; }
+  #count { position: fixed; z-index: 5; display: none; place-items: center; width: 96px; height: 96px; margin: -48px 0 0 -48px; color: #fff;
+    background: rgba(20, 22, 30, .78); border-radius: 50%; font: 600 46px/1 "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif; pointer-events: none; }
+  body.counting #count { display: grid; }
+  #bar { position: fixed; z-index: 6; display: flex; align-items: center; padding: 8px; color: var(--text); background: var(--surface);
+    border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 18px 50px rgba(0, 0, 0, .5); white-space: nowrap;
+    font: 13px/1.4 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; }
+  #bar[hidden] { display: none; }
+  #bar .part { display: none; align-items: center; gap: 6px; }
+  #bar[data-stage="ready"] .ready, #bar[data-stage="starting"] .starting,
+  #bar[data-stage="recording"] .live, #bar[data-stage="paused"] .live { display: flex; }
+  #bar button { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 11px; color: var(--text); background: var(--button);
+    border: 1px solid var(--line); border-radius: 8px; font: inherit; font-weight: 500; white-space: nowrap; cursor: pointer; }
+  #bar button:hover { background: var(--button-hover); }
+  #bar button.primary { color: #fff; background: var(--primary); border-color: var(--primary); }
+  #bar button.primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
+  #bar button.toggle[aria-pressed="true"] { color: var(--focus); background: var(--soft); border-color: var(--focus); }
+  #bar button.armed { color: #fff; background: #c4373c; border-color: #c4373c; }
+  #bar svg { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  #bar .rec-dot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: #e5484d; }
+  #bar button .rec-dot { box-shadow: 0 0 0 2px rgba(255, 255, 255, .85); }
+  #bar[data-stage="paused"] .live > .rec-dot { background: transparent; box-shadow: inset 0 0 0 2px var(--dim); }
+  #bar .sep { width: 1px; height: 20px; margin: 0 3px; background: var(--line); }
+  #r-time { min-width: 46px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  #r-sound { display: flex; gap: 5px; color: var(--dim); }
+  #r-sound svg { width: 15px; height: 15px; }
+  #r-sound .off { color: #e5484d; }
+  #r-wait { min-width: 150px; color: var(--dim); }
+  #bar .keys { margin-left: 4px; color: var(--dim); font-size: 12px; }
 </style>
 </head>
 <body>
@@ -70,6 +105,26 @@
     <button type="submit" id="c-save" class="primary" title="Save the snap with this comment and copy it as a picture, to paste into a chat, an email or a document (Enter)">Save</button>
   </div>
 </form>
+<div id="count"></div>
+<div id="bar" hidden>
+  <div class="part ready">
+    <button type="button" id="r-start" class="primary" title="Start recording after a three-second count (Enter)"><span class="rec-dot"></span>Start recording</button>
+    <button type="button" id="r-system" class="toggle" aria-pressed="false" title="Also record the sound the computer plays"><svg viewBox="0 0 24 24"><path d="M4 9.5h3.2L11.5 6v12l-4.3-3.5H4z"/><path d="M15 9.2a4 4 0 0 1 0 5.6M17.6 6.6a7.6 7.6 0 0 1 0 10.8"/></svg>Computer sound</button>
+    <button type="button" id="r-mic" class="toggle" aria-pressed="false" title="Also record your voice, through the microphone"><svg viewBox="0 0 24 24"><rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v2.5"/></svg>Microphone</button>
+    <button type="button" id="r-cancel" title="Record nothing (Esc)">Cancel</button>
+  </div>
+  <div class="part starting">
+    <span id="r-wait">Recording starts in 3</span>
+    <button type="button" id="r-cancel-2" title="Record nothing (Esc)">Cancel</button>
+  </div>
+  <div class="part live">
+    <span class="rec-dot"></span><span id="r-time">0:00</span><span id="r-sound"></span>
+    <span class="sep"></span>
+    <button type="button" id="r-pause" title="Pause the recording; Resume goes on in the same video"><svg viewBox="0 0 24 24"><path d="M9 6.5v11M15 6.5v11"/></svg><span>Pause</span></button>
+    <button type="button" id="r-stop" class="primary" title="Stop and save the video, then write its comment (Ctrl + Alt + R)"><svg viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="1.5"/></svg>Stop</button>
+    <button type="button" id="r-discard" title="Stop and throw the video away"><span>Discard</span></button>
+  </div>
+</div>
 <script>
 (() => {
   const shot = document.getElementById('shot');
@@ -83,6 +138,7 @@
   let scale = devicePixelRatio;
   let last = null;
   let chosen = null;
+  let purpose = 'snap';     // or "record", for a video
   const ratio = () => (shot.naturalWidth ? shot.naturalWidth / innerWidth : scale);
 
   // Dims everything outside rectangle r (or the whole screen when r is null).
@@ -129,10 +185,12 @@
     finished = true;
     start = null;
     document.body.classList.remove('dragging');
-    // The chosen area stays outlined while its picture is taken and its comment written.
+    // The chosen area stays outlined while its picture is taken and its comment
+    // written, or while its video is recorded.
     if (result) {
       chosen = { x: result.x, y: result.y, w: result.w, h: result.h };
-      document.body.classList.add('commenting');
+      document.body.classList.add('chosen');
+      if (purpose === 'snap') document.body.classList.add('commenting');
       draw(chosen, 'window', '');
     }
     window.overlay.done(result);
@@ -147,6 +205,10 @@
     windows = data.windows || [];
     if (data.scale) scale = data.scale;
     if (data.theme) document.documentElement.dataset.theme = data.theme;
+    if (data.purpose === 'record') {
+      purpose = 'record';
+      document.getElementById('hint').innerHTML = '<span><b>Drag</b> to record an area</span><span><b>Click</b> a window to record it</span><span><kbd>Enter</kbd> the whole screen</span><span><kbd>Esc</kbd> cancel</span>';
+    }
     if (!data.src) {
       document.documentElement.classList.add('live');
       return shown();
@@ -251,6 +313,7 @@
     window.overlay.onComment((data) => {
       const r = data.area || chosen || { x: 0, y: 0, w: innerWidth, h: innerHeight };
       document.getElementById('c-title').textContent = `Snap ${data.number}`;
+      if (data.video) videoComment(data.number);
       document.body.classList.add('commenting');
       draw(r, 'window', '');
       card.hidden = false;
@@ -266,6 +329,164 @@
   // A click outside the box leaves the typing where it was.
   addEventListener('mousedown', (e) => { if (asking && !card.contains(e.target)) { e.preventDefault(); text.focus(); } });
   addEventListener('contextmenu', (e) => e.preventDefault());
+
+  // ---- Recording a video: the bar beside the area ------------------------------
+  // main.js says what to show (`stage`): ready (Start, the sounds, Cancel),
+  // starting (the count), recording or paused (the time, Pause, Stop, Discard).
+  // While it starts and records, this window lets the mouse through to the
+  // programs underneath, and takes it back over the bar.
+  const bar = document.getElementById('bar');
+  const count = document.getElementById('count');
+  const sound = { system: false, mic: false };
+  let stage = '';
+  let area = null;
+  let runningSince = 0;     // while recording, when the time last started running
+  let before = 0;           // the time recorded before the last pause, in ms
+  let ticking = 0;
+  let overBar = false;
+  const ICON_SYSTEM = '<path d="M4 9.5h3.2L11.5 6v12l-4.3-3.5H4z"/><path d="M15 9.2a4 4 0 0 1 0 5.6M17.6 6.6a7.6 7.6 0 0 1 0 10.8"/>';
+  const ICON_MIC = '<rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v2.5"/>';
+
+  const elapsed = () => before + (runningSince ? performance.now() - runningSince : 0);
+  const clock = (ms) => {
+    const s = Math.floor(ms / 1000);
+    const p = (n) => String(n).padStart(2, '0');
+    return s >= 3600 ? `${Math.floor(s / 3600)}:${p(Math.floor((s % 3600) / 60))}:${p(s % 60)}` : `${Math.floor(s / 60)}:${p(s % 60)}`;
+  };
+  const showTime = () => { document.getElementById('r-time').textContent = clock(elapsed()); };
+
+  // Below the area, else above it, else inside it along its foot; never off the screen.
+  function placeBar() {
+    if (!area) return;
+    const W = innerWidth, H = innerHeight, gap = 10, m = 8;
+    const bw = bar.offsetWidth, bh = bar.offsetHeight;
+    const x = Math.min(W - bw - m, Math.max(m, area.x + area.w / 2 - bw / 2));
+    let y;
+    if (area.y + area.h + gap + bh <= H - m) y = area.y + area.h + gap;
+    else if (area.y - gap - bh >= m) y = area.y - gap - bh;
+    else y = Math.min(H - bh - m, Math.max(m, area.y + area.h - bh - 16));
+    bar.style.left = x + 'px';
+    bar.style.top = y + 'px';
+  }
+
+  function showSoundChoice() {
+    document.getElementById('r-system').setAttribute('aria-pressed', String(sound.system));
+    document.getElementById('r-mic').setAttribute('aria-pressed', String(sound.mic));
+  }
+
+  // While recording: which sounds are in the video; one asked for that could not be had, crossed out in red.
+  function showSoundTaken(s) {
+    const icon = (paths, on, missing, title) => (on || missing
+      ? `<svg viewBox="0 0 24 24" class="${on ? '' : 'off'}"><title>${title}</title>${paths}${on ? '' : '<path d="M4 4l16 16"/>'}</svg>` : '');
+    document.getElementById('r-sound').innerHTML =
+      icon(ICON_SYSTEM, s.system, s.systemMissing, s.system ? 'Recording the computer\'s sound' : 'The computer\'s sound could not be recorded')
+      + icon(ICON_MIC, s.mic, s.micMissing, s.mic ? 'Recording the microphone' : 'The microphone could not be used: Windows may keep it from desktop apps (Settings > Privacy & security > Microphone)');
+  }
+
+  function setStage(next) {
+    stage = next;
+    bar.dataset.stage = next;
+    bar.hidden = false;
+    document.body.classList.toggle('recording', next !== 'ready');
+    document.body.classList.toggle('counting', next === 'starting');
+    draw(area, next === 'ready' ? 'window' : 'rec', '');
+    placeBar();
+  }
+
+  function countDown(ms) {
+    count.style.left = (area.x + area.w / 2) + 'px';
+    count.style.top = (area.y + area.h / 2) + 'px';
+    const wait = document.getElementById('r-wait');
+    const steps = Math.round(ms / 1000);
+    for (let i = 0; i < steps; i++) {
+      setTimeout(() => {
+        if (stage !== 'starting') return;
+        count.textContent = String(steps - i);
+        wait.textContent = `Recording starts in ${steps - i}`;
+      }, i * 1000);
+    }
+    setTimeout(() => { if (stage === 'starting') { count.textContent = ''; wait.textContent = 'Starting…'; } }, steps * 1000);
+    placeBar();
+  }
+
+  if (window.overlay.onRecord) {
+    window.overlay.onRecord((state) => {
+      if (state.press === 'start') { if (stage === 'ready') window.overlay.record('start', sound); return; }
+      if (state.area) area = state.area;
+      if (!area) area = chosen || { x: 0, y: 0, w: innerWidth, h: innerHeight };
+      if (state.stage === 'ready') {
+        if (state.sound) { sound.system = !!state.sound.system; sound.mic = !!state.sound.mic; }
+        showSoundChoice();
+        setStage('ready');
+      } else if (state.stage === 'starting') {
+        setStage('starting');
+        countDown(state.countdown || 3000);
+      } else if (state.stage === 'recording') {
+        if (state.sound) showSoundTaken(state.sound);
+        if (!runningSince) runningSince = performance.now();
+        document.querySelector('#r-pause span').textContent = 'Pause';
+        document.getElementById('r-pause').title = 'Pause the recording; Resume goes on in the same video';
+        setStage('recording');
+        showTime();
+        clearInterval(ticking);
+        ticking = setInterval(showTime, 250);
+      } else if (state.stage === 'paused') {
+        if (runningSince) { before += performance.now() - runningSince; runningSince = 0; }
+        clearInterval(ticking);
+        showTime();
+        document.querySelector('#r-pause span').textContent = 'Resume';
+        document.getElementById('r-pause').title = 'Go on recording, in the same video';
+        setStage('paused');
+      }
+    });
+  }
+
+  // Over the bar the mouse is this window's; elsewhere it goes through.
+  addEventListener('mousemove', (e) => {
+    if (!['starting', 'recording', 'paused'].includes(stage) || bar.hidden) return;
+    const r = bar.getBoundingClientRect();
+    const over = e.clientX >= r.left - 4 && e.clientX <= r.right + 4 && e.clientY >= r.top - 4 && e.clientY <= r.bottom + 4;
+    if (over !== overBar) { overBar = over; window.overlay.pointer(over); }
+  });
+
+  const toggle = (key) => { sound[key] = !sound[key]; showSoundChoice(); };
+  document.getElementById('r-system').onclick = () => toggle('system');
+  document.getElementById('r-mic').onclick = () => toggle('mic');
+  document.getElementById('r-start').onclick = () => { if (stage === 'ready') window.overlay.record('start', sound); };
+  document.getElementById('r-cancel').onclick = () => window.overlay.record('cancel');
+  document.getElementById('r-cancel-2').onclick = () => window.overlay.record('cancel');
+  document.getElementById('r-pause').onclick = () => window.overlay.record(stage === 'paused' ? 'resume' : 'pause');
+  document.getElementById('r-stop').onclick = () => window.overlay.record('stop');
+  // Discard asks once more: a second click within three seconds.
+  const discard = document.getElementById('r-discard');
+  let armed = 0;
+  discard.onclick = () => {
+    if (armed) { clearTimeout(armed); armed = 0; window.overlay.record('discard'); return; }
+    discard.classList.add('armed');
+    discard.firstChild.textContent = 'Discard the video?';
+    placeBar();
+    armed = setTimeout(() => {
+      armed = 0;
+      discard.classList.remove('armed');
+      discard.firstChild.textContent = 'Discard';
+      placeBar();
+    }, 3000);
+  };
+
+  // After Stop, the comment box is for the video.
+  function videoComment(number) {
+    if (runningSince) { before += performance.now() - runningSince; runningSince = 0; }
+    clearInterval(ticking);
+    stage = 'comment';
+    bar.hidden = true;
+    document.body.classList.remove('recording', 'counting');
+    document.getElementById('c-title').textContent = `Video ${number} · ${clock(before)}`;
+    document.querySelector('#card .keys').innerHTML = 'Enter saves it and copies the video file<br>Shift+Enter new line · Esc discards the video';
+    text.placeholder = 'Describe what happens here…';
+    document.getElementById('c-save').title = 'Save the video with this comment and copy its file, to paste into a chat, an email or a folder (Enter)';
+    document.getElementById('c-open').title = 'Save, then open Smart Snap on the video';
+    document.getElementById('c-discard').title = 'Throw this video away (its file goes to the Recycle Bin)';
+  }
 })();
 </script>
 </body>

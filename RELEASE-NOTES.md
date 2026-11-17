@@ -1,5 +1,57 @@
 # Release notes
 
+## 1.3.0 — 18 November 2026
+
+Record a video of an area, a window or the whole screen: it remembers where it came from, as a snap does.
+
+### Downloads
+
+| File | Size | SHA-256 |
+|---|---|---|
+| `Smart-Snap-Setup-1.3.0.exe` | 71.1 MB | `827448D0B0A39CB46D895CE940F41FE996EE2D18AA5BB9A45BC0D7959DCA429A` |
+| `Smart-Snap-Handbook-1.3.0.pdf` | 4.3 MB | `5B86DE62A3B7B86F5E546BAF19461E4AFB27C0474EB89AAE55E327C670C9D500` |
+
+For 64-bit Windows 10 and 11. Not code-signed, so Windows SmartScreen may ask for confirmation on first run.
+
+### Added
+
+- **Record a video.** **Record** in the bar, **Ctrl + Alt + R** anywhere, or **Record a video** in the tray menu. The area is chosen as for an area snap: drag an area, click a window, or Enter for the whole display. A bar beside it offers **Computer sound** and **Microphone** (remembered for the next video), then **Start recording** (or Enter), which counts down three seconds. While it records, the area is outlined in red and the bar shows the time, with **Pause** / **Resume**, **Stop** and **Discard** (two clicks). The outline and the bar are never in the video, and the mouse goes through to your programs everywhere except on the bar. **Stop**, Ctrl + Alt + R again or **Stop recording** in the tray menu ends it.
+- **The comment box after a video**, as after an area snap: **Enter** (or **Save**) keeps the video with its comment and copies the video file to the clipboard, to paste into a chat, an email or a folder; **Save and open** opens Smart Snap on it; **Esc** (or **Discard**) throws it away, its file to the Recycle Bin.
+- **MP4 videos in a new Recordings folder** in the output folder (H.264 and AAC sound, at the area's own resolution, 30 frames a second), named after the application and the time. An area larger than 4096 × 2304 pixels is saved as WebM.
+- **A video is a snap**: in the list with its first picture and its length, and with the application, window, link and comment a snap has. It plays in Smart Snap's window, where **Copy video** and **Show in folder** take the place of Copy picture and Save as PNG; **Delete** moves its file to the Recycle Bin. In the PDF report (and Copy as picture) it is its first picture, with a play sign and its length, opening the video file; the details name the file and its sound.
+- **Quitting while recording** (from the tray, or for an update) saves the video first.
+
+### Changed
+
+- **The window opens 1400 pixels wide** where the screen allows (it was 1280), so the bar, with Record added, still shows every shortcut beside its button. In a narrower window the shortcuts leave the buttons first, as before, then the words of Copy as picture, then Record's word.
+- **The list is headed "Snaps"**, as it holds videos too.
+- **The handbook**, `Smart-Snap-Handbook-1.3.0.pdf`: a new chapter, Recording a video, with its pictures; the window's pictures retaken with Record in the bar; Ctrl + Alt + R and the Recordings folder where they belong. 13 pages.
+
+### Updating from 1.2.4 or earlier
+
+- Settings > Updates > **Update now**, or **Update** in the SCAFFApps Suite.
+
+### Tested
+
+- From the source code in a test profile, at 150 % display scaling, recording only an area covered by a test pattern (red, green, blue and yellow quarters and a moving white bar): the MP4 (H.264 and AAC) is 932 × 512 pixels, the area's own size; its four quarters and all four corner pixels are the pattern's colours at the start, the middle and the end, so the area is cut exactly, and the video's first picture is the same.
+- Pause and Resume: 2 seconds, a 1-second pause, 2 more seconds give a video of about 4 seconds without the pause (3.7 to 4.0 s across the test runs). The bar's time, the comment box, the list and the player agree on its length.
+- Sound: with Computer sound alone and nothing playing, the sound runs the whole video (3.75 s of sound for 3.73 s of picture). With Chromium's test microphone as well, the two are mixed into one stereo track that carries the test tone.
+- Stop opens the comment box ("Video 1 · 0:04 · Electron"). Save and open keeps the comment and opens Smart Snap on the video, which plays; the list shows its first picture and length; Copy video and Show in folder are there, the mark bar is not.
+- The PDF report: the video's section with its first picture, the play sign, its length, the file name as a link and "sound from the computer"; the summary tags it "Video 0:04" and counts "1 video".
+- Discard while recording (two clicks): no snap, nothing in Recordings, no part file left behind.
+- Quit from the tray's code while recording: the video and its snap are saved, then Smart Snap closes.
+- Delete on a video that Smart Snap's player has open: its file goes to the Recycle Bin, and the window says so.
+- The window helper's new command puts a file on the clipboard as Explorer's Copy does (read back as a file list); it refuses a file that does not exist.
+- The area snap's selection page after the changes: the hint, dragging an area, the comment box, Enter saving, and clicking a window, as in 1.2.4.
+- The bar at every window width from 820 to 1400 pixels: nothing runs past its right edge; at 1400 every shortcut shows.
+- The packaged program starts as 1.3.0 with Record and its shortcut. Microsoft Defender finds nothing in the installer.
+
+### Not tested
+
+- **Recording driven by the real keyboard and mouse.** Enter and Ctrl + Alt + R were not pressed (the tests called the function the keys call), Enter in the comment box (which copies the video file) was not used, so as to leave the clipboard alone, and a real mouse going through the overlay to the program underneath, and back onto the bar, was not driven: tests do not take over the keyboard and mouse of a computer in use.
+- A real microphone, Windows' microphone setting switched off, more than one display, displays at different scales, an area larger than 4096 × 2304 (WebM), long recordings, and Windows 10 before version 2004 (where the outline and bar are hidden while recording).
+- This installer over 1.2.4.
+
 ## 1.2.4 — 17 November 2026
 
 Every snapped program shows its own icon, the SCAFFApps apps' included.

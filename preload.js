@@ -6,6 +6,10 @@ contextBridge.exposeInMainWorld('smartSnap', {
   ready: () => ipcRenderer.send('interface-ready'),
   setTheme: (theme) => ipcRenderer.invoke('set-theme', theme),
   snap: (mode, wait) => ipcRenderer.invoke('snap', mode, wait),
+  // Records a video, or stops the one being recorded.
+  record: () => ipcRenderer.invoke('record'),
+  // { stage }: null when no video is being recorded.
+  onRecording: (callback) => ipcRenderer.on('recording', (_e, state) => callback(state)),
   onChanged: (callback) => ipcRenderer.on('snaps-changed', (_e, info) => callback(info)),
   onError: (callback) => ipcRenderer.on('snap-error', (_e, message) => callback(message)),
   onCopied: (callback) => ipcRenderer.on('snap-copied', (_e, info) => callback(info)),
@@ -17,6 +21,7 @@ contextBridge.exposeInMainWorld('smartSnap', {
     clear: () => ipcRenderer.invoke('snaps-clear'),
     copy: (id) => ipcRenderer.invoke('snaps-copy', id),
     save: (id) => ipcRenderer.invoke('snaps-save', id),
+    showVideo: (id) => ipcRenderer.invoke('snaps-show-video', id),
   },
   report: {
     create: (opts) => ipcRenderer.invoke('report', opts),
