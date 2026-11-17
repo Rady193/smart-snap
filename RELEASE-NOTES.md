@@ -1,5 +1,37 @@
 # Release notes
 
+## 1.3.1 — 18 November 2026
+
+The Delay list in the SCAFFApps colours.
+
+### Downloads
+
+| File | Size | SHA-256 |
+|---|---|---|
+| `Smart-Snap-Setup-1.3.1.exe` | 71.1 MB | `71374E2E84BEA01A080BC5A64599158288231CD343DB3E4D66454B9922E8C6BB` |
+| `Smart-Snap-Handbook-1.3.1.pdf` | 4.3 MB | `7CE19F006A4788C4A1C928C4A493D50888306ED74C494E9520FBA73157375274` |
+
+For 64-bit Windows 10 and 11. Not code-signed, so Windows SmartScreen may ask for confirmation on first run.
+
+### Changed
+
+- **The Delay list** opens in the SCAFFApps colours: a card in the window's own colours, the chosen item in gold (purple in the light appearance) with a tick, the one under the pointer lit in grey, as in every SCAFFApps menu. It was the list Windows draws, in its own blue with a grey frame. The arrow keys, Enter and Esc work as before, and nothing beside the list moves. Multi Screens 1.10.3 has the same lists, from the same code.
+- **The handbook**, `Smart-Snap-Handbook-1.3.1.pdf`: 1.3.0's pages and pictures, with the new version.
+
+### Updating from 1.3.0 or earlier
+
+- Settings > Updates > **Update now**, or **Update** in the SCAFFApps Suite.
+
+### Tested
+
+- Smart Snap's window in Edge, with stand-ins for the rest of the app, in the dark and the light appearance: the list opens below its button; a click, the arrow keys with Enter, and a click on the word Delay all work; Esc and a click elsewhere close it without a change; a delay set by the app's own code shows on the button; the bar's last button ends where it did in 1.3.0 (1386 of 1400 pixels).
+- The packaged program in a test profile: version 1.3.1, the Delay list is the new one, and choosing 5 s sets the delay.
+- The SCAFFApps design-language check passes, the new shared files included. Microsoft Defender finds nothing in the installer.
+
+### Not tested
+
+- This installer over 1.3.0.
+
 ## 1.3.0 — 18 November 2026
 
 Record a video of an area, a window or the whole screen: it remembers where it came from, as a snap does.
