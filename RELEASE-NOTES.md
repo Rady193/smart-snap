@@ -1,5 +1,42 @@
 # Release notes
 
+## 1.2.4 — 17 November 2026
+
+Every snapped program shows its own icon, the SCAFFApps apps' included.
+
+### Downloads
+
+| File | Size | SHA-256 |
+|---|---|---|
+| `Smart-Snap-Setup-1.2.4.exe` | 71.1 MB | `AA90E57D04595B32735DF82E70D2D06C758D3631F6B459EEF43D341E0FD7238E` |
+| `Smart-Snap-Handbook-1.2.4.pdf` | 3.7 MB | `25B04E8FD869F02367159FD1277AB965F9B1BE5D3BE087EEB8C4B040FAEA05C9` |
+
+For 64-bit Windows 10 and 11. Not code-signed, so Windows SmartScreen may ask for confirmation on first run.
+
+### Fixed
+
+- **A snap of a program whose icon is stored as PNG pictures now shows that program's icon**, not Windows' plain program icon. This includes the SCAFFApps Suite, Smart Snap, Instant Share, Multi Screens and many other programs, and it applies in the list, in the snap's details, in the PDF report and in Copy as picture. Windows now draws the icon, as Explorer and the taskbar do, at 64 pixels so it stays sharp in print. The icon reader built into Smart Snap's engine (Chromium) cannot read PNG icons and handed back the plain one; it is now used only when Windows cannot answer. Snaps taken before this version keep the icon they were saved with.
+
+### Changed
+
+- **The handbook**, `Smart-Snap-Handbook-1.2.4.pdf`: 1.2.3's pages and pictures, unchanged.
+
+### Updating from 1.2.3 or earlier
+
+- Settings > Updates > **Update now**, or **Update** in the SCAFFApps Suite.
+
+### Tested
+
+- Smart Snap's window helper asked for the icons of the SCAFFApps Suite, Smart Snap, Instant Share, Multi Screens, Microsoft Edge and Notepad: each came back as the program's own icon, 64 × 64 with transparent corners. A program without an icon (curl.exe) and a missing file answer with nothing.
+- Smart Snap's own code for this (starting the helper, asking it, the fallback), run in a signed-in Windows session: the SCAFFApps Suite, Smart Snap and Edge got their own icons. The first answer took about 0.3 s while the helper started, later ones about 2 ms. Programs without an icon still got Windows' plain icon from the fallback.
+- The cause, proven: the same SCAFFApps Suite program file was stamped once with bitmap icon pictures and once with PNG ones. Chromium's reader gave the real icon for the first and the plain one for the second.
+- Installed over 1.2.3 on a working computer the way the SCAFFApps Suite updates it (silently, with Windows' permission): Windows lists 1.2.4, Smart Snap opened again, and its window helper runs with the new icon command.
+- Microsoft Defender finds nothing in the installer.
+
+### Not tested
+
+- **A real snap of a SCAFFApps app after updating** was not driven by a test (tests never snap the screen of the computer they run on); it saves through the same code tested above.
+
 ## 1.2.3 — 16 November 2026
 
 Enter copies the snap as a picture, and the report's pictures stay inside their cards.

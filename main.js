@@ -510,16 +510,29 @@ function notify(channel, payload) {
   if (mainWin && !mainWin.isDestroyed()) mainWin.webContents.send(channel, payload);
 }
 
+// A program's icon for its snaps, as a PNG, or null. Windows draws it (the
+// helper's `icon`), as Explorer and the taskbar show it. Electron's
+// app.getFileIcon cannot read icons stored as PNG pictures (every SCAFFApps
+// app's, and many other programs') and gives Windows' plain program icon for
+// them instead, so it is only the fallback for when the helper cannot answer.
+async function programIcon(exe) {
+  const answer = await ask(`icon ${exe}`, 4000);
+  if (answer && answer.png) return Buffer.from(answer.png, 'base64');
+  try {
+    const icon = await app.getFileIcon(exe, { size: 'large' });
+    if (!icon.isEmpty()) return icon.toPNG();
+  } catch { /* no icon */ }
+  return null;
+}
+
 async function storeSnap(image, mode, info, displayName) {
   const id = crypto.randomUUID();
   fs.mkdirSync(snapsDir(), { recursive: true });
   fs.writeFileSync(snapImage(id), image.toPNG());
   let hasIcon = false;
   if (info && info.exe) {
-    try {
-      const icon = await app.getFileIcon(info.exe, { size: 'large' });
-      if (!icon.isEmpty()) { fs.writeFileSync(snapIcon(id), icon.toPNG()); hasIcon = true; }
-    } catch { /* no icon */ }
+    const icon = await programIcon(info.exe);
+    if (icon) { fs.writeFileSync(snapIcon(id), icon); hasIcon = true; }
   }
   const size = image.getSize();
   const a = info || {};

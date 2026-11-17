@@ -10,6 +10,8 @@
 #   info <hwnd>   details of one window: application name, program file, window
 #                 title, and the page address when the window is a web browser
 #                 (or the folder, for File Explorer)
+#   icon <path>   a program file's own icon as Windows draws it, 64 pixels, as a
+#                 PNG in base64 ("" when the file has none)
 #
 # Positions are in physical screen pixels (the script is DPI-aware).
 param([int]$OwnPid = 0)
@@ -18,7 +20,7 @@ $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding $false
 [Console]::InputEncoding = New-Object System.Text.UTF8Encoding $false
 
-Add-Type -ReferencedAssemblies UIAutomationClient, UIAutomationTypes, WindowsBase -TypeDefinition @'
+Add-Type -ReferencedAssemblies UIAutomationClient, UIAutomationTypes, WindowsBase, System.Drawing -TypeDefinition @'
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -57,6 +59,8 @@ public static class SnapNative {
   [DllImport("kernel32.dll")] static extern IntPtr OpenProcess(uint access, bool inherit, int pid);
   [DllImport("kernel32.dll")] static extern bool CloseHandle(IntPtr h);
   [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] static extern bool QueryFullProcessImageName(IntPtr h, int flags, StringBuilder s, ref int size);
+  [DllImport("shell32.dll", CharSet = CharSet.Unicode)] static extern int SHDefExtractIcon(string file, int index, uint flags, out IntPtr large, IntPtr small, uint size);
+  [DllImport("user32.dll")] static extern bool DestroyIcon(IntPtr h);
 
   // Windows that are part of the desktop itself, never "the application".
   static readonly string[] ShellClasses = { "Progman", "WorkerW", "Shell_TrayWnd", "Shell_SecondaryTrayWnd", "NotifyIconOverflowWindow", "TopLevelWindowForOverflowXamlIsland", "XamlExplorerHostIslandWindow", "Windows.UI.Core.CoreWindow" };
@@ -131,6 +135,24 @@ public static class SnapNative {
       var s = new StringBuilder(1024); int n = s.Capacity;
       return QueryFullProcessImageName(p, 0, s, ref n) ? s.ToString() : "";
     } finally { CloseHandle(p); }
+  }
+
+  // A program file's own icon (its first), drawn by Windows at `size` pixels from
+  // the best of its pictures, as Explorer and the taskbar show it: a PNG in
+  // base64, or "" when the file has no icon. Electron's app.getFileIcon cannot
+  // read icons stored as PNG pictures (every SCAFFApps app's, and many other
+  // programs') and gives Windows' plain program icon for them instead.
+  public static string IconPng(string file, int size) {
+    IntPtr h;
+    if (SHDefExtractIcon(file, 0, 0, out h, IntPtr.Zero, (uint)size) != 0 || h == IntPtr.Zero) return "";
+    try {
+      using (var icon = System.Drawing.Icon.FromHandle(h))
+      using (var bmp = icon.ToBitmap())
+      using (var ms = new System.IO.MemoryStream()) {
+        bmp.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+        return Convert.ToBase64String(ms.ToArray());
+      }
+    } finally { DestroyIcon(h); }
   }
 
   // Store apps are hosted by ApplicationFrameHost; the real app owns a child window.
@@ -252,6 +274,7 @@ while ($true) {
   try {
     if ($line -eq 'snapshot') { $out = Get-Snapshot }
     elseif ($line -match '^info (\d+)$') { $out = Get-Info ([long]$Matches[1]) }
+    elseif ($line -match '^icon (.+)$') { $out = @{ png = [SnapNative]::IconPng($Matches[1], 64) } }
     elseif ($line -eq 'quit') { break }
     else { $out = @{ error = 'unknown command' } }
   } catch {
