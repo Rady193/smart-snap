@@ -14,6 +14,11 @@
 #                 PNG in base64 ("" when the file has none)
 #   copyfile <path>  puts a file on the clipboard, as Explorer's Copy does, so
 #                 it can be pasted into a chat, an email or a folder
+#   grab [x,y ...]  a picture of every display (or of those showing the given
+#                 points), taken with Windows' own screen copy in a few
+#                 hundredths of a second: each written to a file in the temp
+#                 folder as raw 32-bit pixels (blue, green, red, 255), with its
+#                 display's rectangle. Smart Snap reads and deletes the files.
 #
 # Positions are in physical screen pixels (the script is DPI-aware).
 param([int]$OwnPid = 0)
@@ -26,6 +31,7 @@ Add-Type -ReferencedAssemblies UIAutomationClient, UIAutomationTypes, WindowsBas
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -34,6 +40,10 @@ using System.Windows.Automation;
 public class SnapWin {
   public long Hwnd; public int Pid; public string Title; public string Class;
   public int X; public int Y; public int W; public int H;
+}
+
+public class SnapShot {
+  public int X; public int Y; public int W; public int H; public string File;
 }
 
 public static class SnapNative {
@@ -63,6 +73,9 @@ public static class SnapNative {
   [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] static extern bool QueryFullProcessImageName(IntPtr h, int flags, StringBuilder s, ref int size);
   [DllImport("shell32.dll", CharSet = CharSet.Unicode)] static extern int SHDefExtractIcon(string file, int index, uint flags, out IntPtr large, IntPtr small, uint size);
   [DllImport("user32.dll")] static extern bool DestroyIcon(IntPtr h);
+  [DllImport("user32.dll")] static extern IntPtr GetDC(IntPtr h);
+  [DllImport("user32.dll")] static extern int ReleaseDC(IntPtr h, IntPtr dc);
+  [DllImport("gdi32.dll")] static extern bool BitBlt(IntPtr dst, int x, int y, int w, int h, IntPtr src, int sx, int sy, uint rop);
 
   // Windows that are part of the desktop itself, never "the application".
   static readonly string[] ShellClasses = { "Progman", "WorkerW", "Shell_TrayWnd", "Shell_SecondaryTrayWnd", "NotifyIconOverflowWindow", "TopLevelWindowForOverflowXamlIsland", "XamlExplorerHostIslandWindow", "Windows.UI.Core.CoreWindow" };
@@ -119,6 +132,39 @@ public static class SnapNative {
       return true;
     }, IntPtr.Zero);
     return list;
+  }
+
+  // A picture of every display, or of those showing one of `points`, as the
+  // screen is this moment: Windows' own copy of it (layered windows such as
+  // menus and tooltips included), a few hundredths of a second where Electron's
+  // desktopCapturer takes half a second. Written as raw pixels, top row first:
+  // blue, green, red, then 255 (Windows leaves that byte empty).
+  public static List<SnapShot> Grab(List<int[]> points) {
+    var shots = new List<SnapShot>();
+    foreach (var m in Monitors()) {
+      int x = m[0], y = m[1], w = m[2], h = m[3];
+      if (w <= 0 || h <= 0) continue;
+      if (points.Count > 0 && !points.Exists(p => p[0] >= x && p[1] >= y && p[0] < x + w && p[1] < y + h)) continue;
+      byte[] px = new byte[w * h * 4];
+      using (var bmp = new System.Drawing.Bitmap(w, h, System.Drawing.Imaging.PixelFormat.Format32bppRgb)) {
+        using (var g = System.Drawing.Graphics.FromImage(bmp)) {
+          IntPtr screenDc = GetDC(IntPtr.Zero);
+          IntPtr dc = g.GetHdc();
+          try { BitBlt(dc, 0, 0, w, h, screenDc, x, y, 0x40CC0020); }   // SRCCOPY | CAPTUREBLT
+          finally { g.ReleaseHdc(dc); ReleaseDC(IntPtr.Zero, screenDc); }
+        }
+        var data = bmp.LockBits(new System.Drawing.Rectangle(0, 0, w, h), System.Drawing.Imaging.ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppRgb);
+        try {
+          if (data.Stride == w * 4) Marshal.Copy(data.Scan0, px, 0, px.Length);
+          else for (int row = 0; row < h; row++) Marshal.Copy(IntPtr.Add(data.Scan0, row * data.Stride), px, row * w * 4, w * 4);
+        } finally { bmp.UnlockBits(data); }
+      }
+      for (int i = 3; i < px.Length; i += 4) px[i] = 255;
+      string file = Path.Combine(Path.GetTempPath(), "Smart Snap screen " + shots.Count + ".raw");
+      File.WriteAllBytes(file, px);
+      shots.Add(new SnapShot { X = x, Y = y, W = w, H = h, File = file });
+    }
+    return shots;
   }
 
   public static long Foreground() {
@@ -280,6 +326,16 @@ function Copy-FileToClipboard([string]$file) {
   @{ error = 'the clipboard is in use' }
 }
 
+# The screen as it is now (see SnapNative.Grab). `$points`: " x,y x,y", or "".
+function Get-Grab([string]$points) {
+  $list = New-Object 'System.Collections.Generic.List[int[]]'
+  foreach ($p in ($points.Trim() -split ' ' | Where-Object { $_ })) {
+    $xy = $p -split ','
+    $list.Add([int[]]@([int]$xy[0], [int]$xy[1]))
+  }
+  @{ shots = @([SnapNative]::Grab($list) | ForEach-Object { [ordered]@{ x = $_.X; y = $_.Y; w = $_.W; h = $_.H; file = $_.File } }) }
+}
+
 [Console]::Out.WriteLine('{"ready":true}')
 [Console]::Out.Flush()
 
@@ -292,6 +348,7 @@ while ($true) {
     elseif ($line -match '^info (\d+)$') { $out = Get-Info ([long]$Matches[1]) }
     elseif ($line -match '^icon (.+)$') { $out = @{ png = [SnapNative]::IconPng($Matches[1], 64) } }
     elseif ($line -match '^copyfile (.+)$') { $out = Copy-FileToClipboard $Matches[1] }
+    elseif ($line -match '^grab((?: -?\d+,-?\d+)*)$') { $out = Get-Grab $Matches[1] }
     elseif ($line -eq 'quit') { break }
     else { $out = @{ error = 'unknown command' } }
   } catch {

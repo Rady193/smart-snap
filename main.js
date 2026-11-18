@@ -242,6 +242,39 @@ async function captureDisplays(monitors, only) {
   return all.map((d) => shots.find((s) => s.display.id === d.id)).filter(Boolean);
 }
 
+// The same, taken by the helper with Windows' own copy of the screen (see
+// windows.ps1, grab): about 50 ms on a 2560 x 1600 display where desktopCapturer
+// takes half a second, so a snap shows the screen as it was when the key was
+// pressed, a menu still open and the item under the mouse still lit. Null when
+// the helper cannot; captureDisplays is used then.
+async function grabDisplays(only) {
+  const all = screen.getAllDisplays();
+  const points = all.filter((d) => !only || only.includes(d.id)).map((d) => {
+    const p = physicalBounds(d);
+    return `${Math.round(p.x + p.width / 2)},${Math.round(p.y + p.height / 2)}`;
+  });
+  const answer = await ask(`grab ${points.join(' ')}`.trim(), 5000);
+  const list = answer && Array.isArray(answer.shots) ? answer.shots : null;
+  const shots = [];
+  try {
+    for (const s of list || []) {
+      const pixels = fs.readFileSync(s.file);
+      if (pixels.length !== s.w * s.h * 4) return null;
+      const d = all.find((x) => contains(physicalBounds(x), s.x + s.w / 2, s.y + s.h / 2));
+      if (!d) continue;
+      shots.push({ display: d, phys: { x: s.x, y: s.y, width: s.w, height: s.h }, image: nativeImage.createFromBitmap(pixels, { width: s.w, height: s.h }) });
+    }
+  } catch {
+    return null;
+  } finally {
+    for (const s of list || []) {
+      if (/^Smart Snap screen \d+\.raw$/.test(path.basename(String(s.file)))) fs.rm(String(s.file), { force: true }, () => {});
+    }
+  }
+  if (!shots.length || (only && shots.length < only.length)) return null;
+  return all.map((d) => shots.find((s) => s.display.id === d.id)).filter(Boolean);
+}
+
 // The displays a snap needs: the one under the mouse for the full screen, the
 // one showing most of the window in front for a window; all for a frozen area.
 function displaysFor(mode, snapshot) {
@@ -280,17 +313,14 @@ function windowAt(snapshot, x, y) {
 // click a window to take that window; Enter takes the whole display; Esc or a
 // right-click cancels.
 //
-// Live (the usual way): the windows are see-through and never take the
+// Frozen (a snap): they show each display's picture, taken beforehand (see
+// snap). Live (a video): the windows are see-through and never take the
 // keyboard, so the screen goes on moving under them and the program in front
-// stays in front. The picture is taken once the area is chosen; the windows
-// are left out of it. Frozen (after a delay): they show each display's picture
-// taken beforehand. A window on top closes open menus and hover effects, so
-// the delay that is there for snapping those freezes the screen first.
+// stays in front; they are left out of the video.
 //
 // The chosen display's window then stays, the area still outlined, and asks
 // for the snap's comment in a box beside it, as Multi Screens asks for a
-// note's. The box opens the moment the area is chosen; the picture is taken
-// meanwhile, the box left out of it, and the answer waits for it if need be.
+// note's.
 let overlays = [];
 let overlayDone = null;     // the selection, while it is being made
 let overlayPurpose = 'snap';  // "snap", or "record" for a video (see Recording a video)
@@ -298,8 +328,8 @@ let commentDone = null;     // the comment box, while it is open
 let commentAnswer = null;   // what the box answers (a promise), from the moment it opens
 
 // Windows 10 2004 and later leave a window out of pictures of the screen
-// altogether; before that it would show black, so it is hidden instead (and
-// the box waits for the picture, not to blink).
+// altogether; before that it would show black, so a video's is hidden while it
+// records.
 const LEFT_OUT_OF_CAPTURE = process.platform === 'win32' && Number(os.release().split('.')[2]) >= 19041;
 
 function endOverlays() {
@@ -336,7 +366,7 @@ function closeOverlays(result) {
     globalShortcut.unregister('Enter');      // Enter is typed in the comment now
     const o = overlays[0];
     // (A video's area gets the recording bar instead, from record().)
-    if (overlayPurpose === 'snap' && o && (!o.live || LEFT_OUT_OF_CAPTURE)) openComment(o, { x: result.x, y: result.y, w: result.w, h: result.h });
+    if (overlayPurpose === 'snap' && o) openComment(o, { x: result.x, y: result.y, w: result.w, h: result.h });
   }
   if (done) done(result);
 }
@@ -417,24 +447,43 @@ function selectArea(screens, snapshot, live, number, purpose = 'snap') {
         x: d.bounds.x, y: d.bounds.y, width: d.bounds.width, height: d.bounds.height,
         frame: false, show: false, resizable: false, movable: false, minimizable: false, maximizable: false,
         fullscreenable: false, skipTaskbar: true, hasShadow: false, enableLargerThanScreen: true,
+        thickFrame: false,
         alwaysOnTop: true, title: 'Smart Snap selection',
-        ...(live ? { transparent: true, backgroundColor: '#00000000', focusable: false } : { backgroundColor: '#000000' }),
+        // See-through, also when frozen (see revealing below).
+        transparent: true, backgroundColor: '#00000000',
+        ...(live ? { focusable: false } : {}),
         webPreferences: { preload: path.join(__dirname, 'overlay-preload.js'), contextIsolation: true, nodeIntegration: false },
       });
       win.setAlwaysOnTop(true, 'screen-saver');
       win.setBounds(d.bounds);
+      // Shown at once, still empty and letting the mouse through: Windows plays
+      // its opening animation (a quick zoom, which nothing here can switch off
+      // for a see-through window) on a window with nothing in it, unseen, and
+      // the program under the mouse keeps it, so nothing on the screen changes.
+      // The page then shows the frozen screen and the dimming in one step
+      // (revealOverlay): the screen looks as if it had simply stopped.
+      win.setIgnoreMouseEvents(true);
+      win.showInactive();
+      // Never in the picture of the screen (a video). Windows ignores this for a
+      // window that is not shown yet, so it is set once the window is on screen.
+      if (live) win.setContentProtection(true);
+      const shownAt = Date.now();
       win.loadFile(path.join(__dirname, 'app', 'overlay.html'));
       win.webContents.once('did-finish-load', () => {
+        const size = s.image ? s.image.getSize() : null;
         win.webContents.send('overlay-image', {
-          // JPEG is quick to encode; the snap itself is cut from the original.
-          src: s.image ? 'data:image/jpeg;base64,' + s.image.toJPEG(94).toString('base64') : null,
+          // The picture's own pixels (blue, green, red, alpha), not compressed:
+          // the frozen screen is exactly the screen.
+          pixels: s.image ? s.image.toBitmap() : null,
+          width: size ? size.width : 0,
+          height: size ? size.height : 0,
           scale: d.scaleFactor,
           windows: live ? [] : outlinesOn(snapshot, d, s.phys),
           theme: TITLE_BAR[loadSettings().appTheme] ? loadSettings().appTheme : 'dark',
           purpose,
         });
       });
-      return { win, display: d, live, number, cursorHere: contains(d.bounds, cursor.x, cursor.y) };
+      return { win, display: d, live, number, shownAt, cursorHere: contains(d.bounds, cursor.x, cursor.y) };
     });
     if (live) {
       Promise.resolve(snapshot).then((snap) => {
@@ -446,20 +495,25 @@ function selectArea(screens, snapshot, live, number, purpose = 'snap') {
   });
 }
 
-// Each overlay says when it is drawn; it is shown only then, so the screen
-// does not flash black.
-ipcMain.on('overlay-ready', (event) => {
+// Each overlay says when its page is drawn (still hidden); once Windows'
+// opening animation is over too, it shows it, and only then takes the mouse
+// (and, frozen, the keyboard).
+const OPENING_MS = 250;   // Windows' opening animation, with a margin (about 190 ms measured)
+
+ipcMain.on('overlay-ready', async (event) => {
   const o = overlays.find((x) => !x.win.isDestroyed() && x.win.webContents === event.sender);
   if (!o) return;
-  if (o.live) {
-    o.win.showInactive();
-    // Never in the picture of the screen. Windows ignores this for a window
-    // that is not shown yet, so it is set once the window is on screen.
-    o.win.setContentProtection(true);
-    return;
-  }
-  o.win.show();
-  if (o.cursorHere) o.win.focus();
+  const wait = o.shownAt + OPENING_MS - Date.now();
+  if (wait > 0) await delay(wait);
+  if (o.win.isDestroyed() || !overlays.includes(o)) return;
+  o.win.webContents.send('overlay-reveal');
+});
+
+ipcMain.on('overlay-revealed', (event) => {
+  const o = overlays.find((x) => !x.win.isDestroyed() && x.win.webContents === event.sender);
+  if (!o) return;
+  o.win.setIgnoreMouseEvents(false);
+  if (!o.live && o.cursorHere) o.win.focus();
 });
 
 ipcMain.on('overlay-done', (event, result) => {
@@ -607,8 +661,8 @@ function displayLabel(d, index, count) {
 // window: it is hidden (`own`). Pinned on top of the program being snapped, it
 // would be in the picture too: it steps aside (`pinned`), and comes back
 // afterwards without taking the focus (comeBack). `settle`: wait until the
-// screen is drawn without it (a live selection takes its picture later, when
-// the window is long gone).
+// screen is drawn without it (a video starts later, when the window is long
+// gone).
 async function stepAside(settle) {
   const away = { own: false, pinned: false };
   if (mainWin && !mainWin.isDestroyed() && mainWin.isVisible() && mainWin.isFocused()) {
@@ -626,41 +680,39 @@ function comeBack(away) {
   if (away.pinned && mainWin && !mainWin.isDestroyed() && !mainWin.isVisible()) mainWin.showInactive();
 }
 
-// Takes one snap. `mode` is "area", "window" or "full".
+// Takes one snap. `mode` is "area", "window" or "full". The screen is caught
+// first, before anything of Smart Snap's covers it, as Windows' Snipping Tool
+// does; an area is then chosen on that picture (see selectArea). A window put
+// over the screen takes the mouse from the program under it, which puts out
+// the item lit under the mouse and can close an open menu: caught first, they
+// are in the snap.
 async function snap(mode, wait = 0) {
   if (snapping || overlayDone) return;
   snapping = true;
   let hidOwn = false;
   let hidPinned = false;
-  // An area without a delay is chosen on the live screen (see selectArea).
-  const live = mode === 'area' && !(wait > 0);
   try {
-    ({ own: hidOwn, pinned: hidPinned } = await stepAside(!live));
+    ({ own: hidOwn, pinned: hidPinned } = await stepAside(true));
     if (wait > 0) await delay(wait * 1000);
 
-    let snapshot = ask('snapshot');
+    let snapshot = null;
+    let only = null;
     let shots = null;
     let picked = null;
-    if (live) {
-      const screens = screen.getAllDisplays().map((d) => ({ display: d, phys: physicalBounds(d), image: null }));
-      picked = await selectArea(screens, snapshot, true, readSnaps().length + 1);
-      if (!picked) { if (hidOwn) showMain(); return; }
-      snapshot = await snapshot;
-      // Only the display the area is on.
-      const only = [picked.displayId];
-      if (LEFT_OUT_OF_CAPTURE) {
-        shots = await captureDisplays(snapshot && snapshot.monitors, only);
-      } else {
-        // Hidden for the picture, the screen drawn again without it, then back.
-        for (const o of overlays) o.win.hide();
-        await delay(120);
-        shots = await captureDisplays(snapshot && snapshot.monitors, only);
-        for (const o of overlays) if (!o.win.isDestroyed()) { o.win.showInactive(); o.win.setContentProtection(true); }
-      }
+    if (mode === 'window') {
+      // The window in front says which display to take.
+      snapshot = await ask('snapshot');
+      only = displaysFor(mode, snapshot);
+      shots = await grabDisplays(only);
     } else {
+      // The picture first, then the windows on it (the helper answers in turn).
+      only = displaysFor(mode, null);
+      const grabbing = grabDisplays(only);
+      snapshot = ask('snapshot');
+      shots = await grabbing;
       snapshot = await snapshot;
-      shots = await captureDisplays(snapshot && snapshot.monitors, displaysFor(mode, snapshot));
     }
+    if (!shots) shots = await captureDisplays(snapshot && snapshot.monitors, only);
     if (!shots.length) throw new Error('Windows did not hand over a picture of the screen.');
     const all = screen.getAllDisplays();
     const nameOf = (shot) => displayLabel(shot.display, all.findIndex((d) => d.id === shot.display.id), all.length);
@@ -670,7 +722,7 @@ async function snap(mode, wait = 0) {
     let displayName = '';
 
     if (mode === 'area') {
-      if (!live) picked = await selectArea(shots, snapshot, false, readSnaps().length + 1);
+      picked = await selectArea(shots, snapshot, false, readSnaps().length + 1);
       if (!picked) { if (hidOwn) showMain(); return; }
       const shot = shots.find((s) => s.display.id === picked.displayId);
       if (!shot) throw new Error('That display could not be snapped. Try again.');

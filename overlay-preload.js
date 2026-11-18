@@ -1,11 +1,16 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('overlay', {
-  // { src, scale, windows }: `src` is the frozen picture, or null on the live screen.
+  // { pixels, width, height, scale, windows }: `pixels` is the frozen picture
+  // (raw, blue first), or null on the live screen.
   onImage: (callback) => ipcRenderer.once('overlay-image', (_event, data) => callback(data)),
   // On the live screen the window outlines come a moment later.
   onWindows: (callback) => ipcRenderer.once('overlay-windows', (_event, windows) => callback(windows)),
+  // The page is drawn (still hidden); then, once Windows' opening animation is
+  // over, main.js says to show it, and is told when it shows.
   ready: () => ipcRenderer.send('overlay-ready'),
+  onReveal: (callback) => ipcRenderer.once('overlay-reveal', () => callback()),
+  revealed: () => ipcRenderer.send('overlay-revealed'),
   // { x, y, w, h } in this display's CSS pixels, plus `hwnd` when a window was
   // clicked; `null` cancels.
   done: (result) => ipcRenderer.send('overlay-done', result),

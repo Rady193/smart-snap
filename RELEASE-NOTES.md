@@ -1,5 +1,41 @@
 # Release notes
 
+## 1.3.2 — 18 November 2026
+
+An area snap freezes the screen the moment you press the key, as Windows' Snipping Tool does: an open menu and the item lit under the mouse stay in the snap.
+
+### Downloads
+
+| File | Size | SHA-256 |
+|---|---|---|
+| `Smart-Snap-Setup-1.3.2.exe` | 71.1 MB | `EECDE2E2670C305EDAE4F2C060C2933FED8BCE8739C5BDCAB815B6F20E526558` |
+| `Smart-Snap-Handbook-1.3.2.pdf` | 4.3 MB | `EAEC8F3FBC78BC213C84EB5740AA98C393CF40C9FB20259BB499DAEB38C96F52` |
+
+For 64-bit Windows 10 and 11. Not code-signed, so Windows SmartScreen may ask for confirmation on first run.
+
+### Changed
+
+- **Area snaps freeze the screen first.** Ctrl + Alt + S or PrtScn takes the picture of the screen at once, before anything of Smart Snap's covers it, and you choose the area on that picture. Since 1.1.3 the area was chosen on the live screen and the picture taken when you let go; by then the dimmed screen had taken the mouse from the program under it, which put out the item lit under the mouse and could close an open menu, so they were missing from the snap.
+- **The frozen screen is the screen, pixel for pixel.** No zoom as it appears, no flash, and nothing blurred or moved: it looks as if the screen had simply stopped, then dims. (The frozen screen after a Delay used to be a slightly stretched JPEG copy that zoomed in.)
+- **Pictures in about 50 ms.** Area, window and full-screen snaps take their picture with Windows' own copy of the screen, where Smart Snap's earlier way took about half a second. The dimmed screen shows about 0.4 s after the key; the screen stays as it is until then.
+- **The handbook**, `Smart-Snap-Handbook-1.3.2.pdf`: Taking a snap says the screen freezes, and when to use PrtScn or a Delay for a menu.
+
+### Updating from 1.3.1 or earlier
+
+- Settings > Updates > **Update now**, or **Update** in the SCAFFApps Suite.
+
+### Tested
+
+- From the source in a test profile, over a full-screen test pattern that changed to a second pattern 150 ms after the snap was asked for: four area snaps, each dragged from code, were exactly the size dragged (900 × 600 pixels at 150%), showed the first pattern only and kept their typed comment; a full-screen snap showed the first pattern (1.3.1, the same test: the second); window snaps showed the first pattern.
+- The frozen screen against the real one over a page of small coloured text, six times, grabbed eight times in the first half second and again after a second: every grab identical to the real screen, pixel for pixel. (1.3.1: a zoom for about 0.2 s, then half the pixels different, the picture stretched by up to 2 pixels.)
+- Recording a video: the area is chosen on the live screen as before, the bar shows, Cancel closes it, and an area snap straight after is exact.
+- The installer over 1.3.1 on the developer's laptop (2560 × 1600 at 150%), as an update: 1.3.2 starts with the new screen copy.
+
+### Not tested
+
+- Several displays, and displays at different scales.
+- A program's own menu with a real mouse and keyboard (the test changes the screen from code instead).
+
 ## 1.3.1 — 18 November 2026
 
 The Delay list in the SCAFFApps colours.

@@ -1,17 +1,25 @@
 <!doctype html>
-<html>
+<html class="waiting">
 <head>
 <meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'self' 'unsafe-inline'">
 <title>Smart Snap selection</title>
 <style>
-  html, body { margin: 0; height: 100%; overflow: hidden; cursor: crosshair; user-select: none; background: #000; font: 13px/1.4 "Segoe UI", system-ui, sans-serif; }
-  /* The live screen shows through. The faint tint keeps the mouse on this
-     window where nothing is drawn. */
-  html.live { background: rgba(0, 0, 0, .004); }
-  html.live body { background: transparent; }
+  html, body { margin: 0; height: 100%; overflow: hidden; cursor: crosshair; user-select: none; font: 13px/1.4 "Segoe UI", system-ui, sans-serif; }
+  /* See-through: the live screen shows through (for a video), or the frozen
+     picture covers it. The faint tint keeps the mouse on this window where
+     nothing is drawn. */
+  html { background: rgba(0, 0, 0, .004); }
+  body { background: transparent; }
   html.live #shot { display: none; }
-  #shot { position: fixed; inset: 0; width: 100%; height: 100%; display: block; -webkit-user-drag: none; pointer-events: none; }
+  /* Nothing at all until main.js says Windows' opening animation is over
+     (overlay-reveal): then the frozen screen and the dimming come in one step. */
+  html.waiting { background: transparent; }
+  html.waiting body { visibility: hidden; }
+  /* The frozen screen, pixel for pixel: sized in script to its own pixels, never
+     stretched to the window (which Windows can make a pixel or two larger than
+     the display), so it looks exactly like the screen it froze. */
+  #shot { position: fixed; left: 0; top: 0; display: block; pointer-events: none; }
   /* The dimming is drawn around the chosen box by four strips. */
   .dim { position: fixed; background: rgba(8, 10, 16, .45); pointer-events: none; }
   #box { position: fixed; display: none; outline: 2px solid #f0c33c; box-shadow: 0 0 0 1px rgba(255, 255, 255, .55) inset; pointer-events: none; }
@@ -90,7 +98,7 @@
 </style>
 </head>
 <body>
-<img id="shot" alt="" draggable="false">
+<canvas id="shot"></canvas>
 <div class="dim" id="d-top"></div><div class="dim" id="d-left"></div><div class="dim" id="d-right"></div><div class="dim" id="d-bottom"></div>
 <div id="box"></div>
 <div id="size"></div>
@@ -139,7 +147,7 @@
   let last = null;
   let chosen = null;
   let purpose = 'snap';     // or "record", for a video
-  const ratio = () => (shot.naturalWidth ? shot.naturalWidth / innerWidth : scale);
+  const ratio = () => scale;
 
   // Dims everything outside rectangle r (or the whole screen when r is null).
   function draw(r, kind, label) {
@@ -201,6 +209,10 @@
     if (last) hover(last);
     requestAnimationFrame(() => requestAnimationFrame(() => window.overlay.ready()));
   };
+  window.overlay.onReveal(() => {
+    document.documentElement.classList.remove('waiting');
+    requestAnimationFrame(() => requestAnimationFrame(() => window.overlay.revealed()));
+  });
   window.overlay.onImage((data) => {
     windows = data.windows || [];
     if (data.scale) scale = data.scale;
@@ -209,12 +221,21 @@
       purpose = 'record';
       document.getElementById('hint').innerHTML = '<span><b>Drag</b> to record an area</span><span><b>Click</b> a window to record it</span><span><kbd>Enter</kbd> the whole screen</span><span><kbd>Esc</kbd> cancel</span>';
     }
-    if (!data.src) {
+    if (!data.pixels) {
       document.documentElement.classList.add('live');
       return shown();
     }
-    shot.onload = shown;
-    shot.src = data.src;
+    // The display's picture as Windows hands it over (blue, green, red, alpha),
+    // drawn one picture pixel to one screen pixel, without compression.
+    const w = data.width, h = data.height;
+    const px = new Uint8ClampedArray(data.pixels.buffer, data.pixels.byteOffset, w * h * 4);
+    for (let i = 0; i < px.length; i += 4) { const b = px[i]; px[i] = px[i + 2]; px[i + 2] = b; px[i + 3] = 255; }
+    shot.width = w;
+    shot.height = h;
+    shot.style.width = w / devicePixelRatio + 'px';
+    shot.style.height = h / devicePixelRatio + 'px';
+    shot.getContext('2d').putImageData(new ImageData(px, w, h), 0, 0);
+    shown();
   });
   // On the live screen the window outlines come a moment later.
   if (window.overlay.onWindows) {

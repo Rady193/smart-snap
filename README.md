@@ -2,7 +2,7 @@
 
 Smart Snap takes screenshots and screen videos that remember where they came from. Each snap records the application it was taken from, the window title and, for web browsers, the address of the page. Add a comment, mark a spot, and turn all your snaps into one PDF report.
 
-Version 1.3.1 · Windows 10 and 11 (64-bit) · Published by SCAFFApps
+Version 1.3.2 · Windows 10 and 11 (64-bit) · Published by SCAFFApps
 
 The **[handbook](https://github.com/Rady193/smart-snap/releases/latest)** (`Smart-Snap-Handbook-<version>.pdf`, on the Releases page) explains everything, with pictures.
 
@@ -25,7 +25,7 @@ The **[handbook](https://github.com/Rady193/smart-snap/releases/latest)** (`Smar
 
 ## Install
 
-Download `Smart-Snap-Setup-1.3.1.exe` from the [Releases page](https://github.com/Rady193/smart-snap/releases/latest) and run it, or install it from the **SCAFFApps Suite**. It installs for everyone on the computer, in `C:\Program Files\SCAFFApps\Smart Snap` unless you choose another folder, so Windows asks for administrator permission once. It adds a desktop shortcut and a Start menu shortcut in the **SCAFFApps** folder, and can be removed from Windows Settings. A copy installed by an earlier version in `C:\Program Files\Smart Snap` moves to the SCAFFApps folder when it updates.
+Download `Smart-Snap-Setup-1.3.2.exe` from the [Releases page](https://github.com/Rady193/smart-snap/releases/latest) and run it, or install it from the **SCAFFApps Suite**. It installs for everyone on the computer, in `C:\Program Files\SCAFFApps\Smart Snap` unless you choose another folder, so Windows asks for administrator permission once. It adds a desktop shortcut and a Start menu shortcut in the **SCAFFApps** folder, and can be removed from Windows Settings. A copy installed by an earlier version in `C:\Program Files\Smart Snap` moves to the SCAFFApps folder when it updates.
 
 Since 1.1.0 Smart Snap is installed, not portable. A portable copy from before cannot update itself to it: install it with the installer once, then delete the portable file.
 
@@ -58,7 +58,7 @@ Closing the window does not stop Smart Snap: it keeps running in the tray so the
 
 | Kind | Shortcut | What it takes |
 |---|---|---|
-| Area | Ctrl + Alt + S, or PrtScn | The screen dims but stays live. **Press, drag and release** to take a rectangle; the picture is taken the moment you let go. **Click** a window to take that window, **Enter** for the whole display, **Esc** or right-click to cancel. While you move the mouse, the window under it is outlined in gold and its size is shown. Then the comment box opens beside the area (below). |
+| Area | Ctrl + Alt + S, or PrtScn | The screen freezes and dims: its picture is taken the moment you press the key, as Windows' Snipping Tool does, and you choose on it. **Press, drag and release** to take a rectangle. **Click** a window to take that window, **Enter** for the whole display, **Esc** or right-click to cancel. While you move the mouse, the window under it is outlined in gold and its size is shown. Then the comment box opens beside the area (below). |
 | Window | Ctrl + Alt + W | The window you are using, without its shadow. |
 | Full screen | Ctrl + Alt + F | The whole display the mouse is on. |
 
@@ -76,7 +76,9 @@ The same three are buttons at the top of the Smart Snap window and items in the 
 
 The comment can be left empty and written later in Smart Snap. Window and full-screen snaps have no box: Smart Snap opens on them as before.
 
-**Delay** (beside the buttons) waits 3, 5 or 10 seconds before taking the snap, so you can open a menu or hover over something first. The tray menu also has **Snap an area in 5 seconds**. After a delay, an area snap **freezes** the screen before you choose the area, as Windows' own Snipping Tool does: anything placed over the screen closes open menus and hover effects, so this is the way to snap them.
+**Menus and lit items.** The screen is caught before anything of Smart Snap's covers it, so an open menu and the item lit under the mouse stay in the snap. (A window put over the screen takes the mouse from the program under it, which puts out the lit item and can close the menu.) If a program closes its menu as soon as you press Ctrl or Alt, press PrtScn instead, or use a Delay.
+
+**Delay** (beside the buttons) waits 3, 5 or 10 seconds before taking the snap, so you can open a menu or hover over something first. The tray menu also has **Snap an area in 5 seconds**.
 
 With more than one monitor, every monitor dims for an area snap and you can drag on any of them. A window spread across two monitors is cut at the edge of the one that shows most of it.
 
@@ -230,13 +232,13 @@ npm run dist
 | Path | Purpose |
 |---|---|
 | `main.js` | Tray, shortcuts, taking pictures of the screens, the area selection windows, keeping the snaps, and building the PDF report. |
-| `windows.ps1` | Runs in the background for the app's lifetime. Lists the windows on screen and, for one window, names its application and reads the address from a browser's address bar (Windows UI Automation). It also puts a video's file on the clipboard. |
+| `windows.ps1` | Runs in the background for the app's lifetime. Lists the windows on screen and, for one window, names its application and reads the address from a browser's address bar (Windows UI Automation). It also takes the picture of the screen for a snap (Windows' own screen copy, in about 50 ms) and puts a video's file on the clipboard. |
 | `preload.js` | The fixed set of functions the app window may call in `main.js`. |
 | `registration.js`, `registration-preload.js`, `app/registration.html` | The name and e-mail registration, the same files in every SCAFFApps Electron app. |
 | `overlay-preload.js` | The same for the area selection windows. |
 | `app/recorder.html`, `app/recorder.js`, `recorder-preload.js` | The recorder, in a window that is never shown: it records the display, keeps the chosen area of each frame, mixes the sounds and encodes the video, handing it to `main.js` a second at a time. |
 | `app/index.html`, `app/style.css`, `app/renderer.js` | The app window. |
-| `app/overlay.html` | The dimmed screen on which an area is chosen: see-through over the live screen, or the frozen picture after a delay. For a video, it then shows the recording bar and the area's outline, and lets the mouse through. |
+| `app/overlay.html` | The dimmed screen on which an area is chosen: the frozen picture for a snap, see-through over the live screen for a video. For a video, it then shows the recording bar and the area's outline, and lets the mouse through. |
 | `app/theme-early.js` | Applies the saved light or dark appearance before the window is first drawn. |
 | `handbook/` | `handbook.html`, its pictures, the shared `kit.py`, and `build_handbook.py`, which takes the pictures and prints the handbook to `release\Smart-Snap-Handbook-<version>.pdf`, its only copy: `C:\venvs\studio\Scripts\python.exe handbook\build_handbook.py`. |
 | `build/` | Icon files and the script that draws them, the packaging hook, and `installer.nsh`, the installer page that asks for the output folder and moves an install from the old folder. |
