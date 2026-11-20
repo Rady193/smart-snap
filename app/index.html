@@ -18,6 +18,7 @@
   <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></symbol>
   <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4"/></symbol>
   <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></symbol>
+  <symbol id="i-spell" viewBox="0 0 24 24"><path d="M2.5 15.5 6.6 5l4.1 10.5M4 11.7h5.2"/><path d="m11.5 15.2 3.6 3.6 6.6-7.6"/></symbol>
   <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></symbol>
   <symbol id="i-save" viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/></symbol>
   <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4.5 7h15M10 11v6M14 11v6M6.5 7l1 12a2 2 0 0 0 2 1.8h5a2 2 0 0 0 2-1.8l1-12M9 7V4.8a.8.8 0 0 1 .8-.8h4.4a.8.8 0 0 1 .8.8V7"/></symbol>
@@ -90,6 +91,10 @@
       <button id="unmark" class="link" hidden>Remove mark</button>
     </div>
     <textarea id="comment" rows="3" placeholder="Comment for the report (optional): what should the reader notice?"></textarea>
+    <div class="comment-tools">
+      <div class="spell" id="comment-spell" hidden></div>
+      <button type="button" id="comment-fix" class="link fix" title="Fix the comment’s spelling with Windows’ own spell checker, on this computer (F7)"><svg class="icon"><use href="#i-spell"/></svg>Fix spelling</button>
+    </div>
     <div class="actions">
       <button id="copy-btn"><svg class="icon"><use href="#i-copy"/></svg><span>Copy picture</span></button>
       <button id="save-btn"><svg class="icon"><use href="#i-save"/></svg><span>Save as PNG</span></button>
@@ -161,6 +166,7 @@
 <div id="toast" hidden><span id="toast-text"></span><span id="toast-actions"></span></div>
 
 <script src="scaffapps-select.js"></script>
+<script src="scaffapps-spelling.js"></script>
 <script src="renderer.js"></script>
 </body>
 </html>

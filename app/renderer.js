@@ -115,6 +115,7 @@ function drawEditor() {
   $('folder').textContent = s.app.location || '';
   $('folder').title = s.app.location || '';
   if (document.activeElement !== $('comment')) $('comment').value = s.text || '';
+  if (spellingFor !== s.id) { spellingFor = s.id; spelling.clear(); }
   $('up-btn').disabled = i <= 0;
   $('down-btn').disabled = i >= snaps.length - 1;
   // A video plays in place of the picture, and cannot be marked; its buttons
@@ -227,6 +228,12 @@ $('comment').addEventListener('input', () => {
   $('comment').timer = setTimeout(() => update({ text: s.text }), 400);
 });
 $('comment').addEventListener('blur', () => update({ text: $('comment').value }));
+
+// Fix spelling (F7), with Windows' own spell checker: see scaffapps-spelling.js. What it
+// changes is typed into the box, so it is saved as typing is.
+const spelling = ScaffSpelling.attach({ box: $('comment'), panel: $('comment-spell'), check: (text) => api.spelling(text) });
+let spellingFor = null;     // the snap the fixes and choices shown are for
+$('comment-fix').onclick = () => spelling.run();
 
 $('link').addEventListener('change', () => {
   update({ url: $('link').value.trim() }).then(drawEditor);
@@ -605,6 +612,8 @@ addEventListener('keydown', (e) => {
     e.preventDefault();
   }
   if (e.ctrlKey && e.key.toLowerCase() === 'c' && !typing && selected) $('copy-btn').click();
+  // F7 fixes the comment's spelling, as in Word.
+  if (e.key === 'F7' && selected && !$('editor').hidden && !document.querySelector('dialog[open]')) { e.preventDefault(); spelling.run(); }
   if (e.key === 'Escape') hideToast();
 });
 

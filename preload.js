@@ -28,6 +28,8 @@ contextBridge.exposeInMainWorld('smartSnap', {
     copyPicture: (opts) => ipcRenderer.invoke('report-copy', opts),
     open: (file) => ipcRenderer.invoke('report-open', file),
   },
+  // The comment's spelling mistakes, by Windows' spell checker (see scaffapps-spelling-main.js).
+  spelling: (text) => ipcRenderer.invoke('spelling-check', String(text || '')),
   openLink: (url) => ipcRenderer.invoke('open-link', url),
   reveal: (file) => ipcRenderer.invoke('reveal', file),
   output: {

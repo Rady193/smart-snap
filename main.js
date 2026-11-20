@@ -7,6 +7,7 @@ const os = require('os');
 const { spawn, execFile } = require('child_process');
 const path = require('path');
 const registration = require('./registration');
+require('./scaffapps-spelling-main').register();   // Fix spelling in the comment boxes (F7): Windows' own spell checker
 const releases = require('./releases');
 const fs = require('fs');
 const { pathToFileURL } = require('url');

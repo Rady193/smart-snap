@@ -1,7 +1,7 @@
 {
   "name": "smart-snap",
   "productName": "Smart Snap",
-  "version": "1.3.2",
+  "version": "1.4.0",
   "description": "Screenshots and screen videos that remember where they came from, collected into a PDF report",
   "author": "SCAFFApps",
   "license": "SEE LICENSE IN LICENSE",
@@ -31,6 +31,8 @@
       "overlay-preload.js",
       "recorder-preload.js",
       "windows.ps1",
+      "scaffapps-spelling-main.js",
+      "scaffapps-spell.ps1",
       "printscreen.ps1",
       "app/**"
     ],

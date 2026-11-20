@@ -39,17 +39,46 @@
     --surface: #ffffff; --field: #f6f5f8; --line: #d4d0dc; --text: #17141c; --dim: #6a6175;
     --focus: #5b2c83; --soft: rgba(91, 44, 131, .1); --button: #f6f5f8; --button-hover: #eceaf0;
   }
+  /* SCAFFApps scrollbars, as the SCAFFERP system and www.scaffapps.com: a slim thumb on no track, wider under the
+     pointer; never the grey Windows bar with its arrows. Purple, stronger in the dark appearance to show on the dark grey.
+     Touch screens keep their own. */
+  @media (pointer: fine) {
+    :root { --sb-thumb: rgba(91, 44, 131, .85); --sb-thumb-on: #5b2c83; }
+    :root[data-theme="light"] { --sb-thumb: rgba(91, 44, 131, .55); --sb-thumb-on: rgba(91, 44, 131, .85); }
+    ::-webkit-scrollbar { width: 12px; height: 12px; background: transparent; }
+    ::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
+    ::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+    ::-webkit-scrollbar-thumb { background-color: var(--sb-thumb); border: 3px solid transparent; border-radius: 12px;
+      background-clip: padding-box; min-height: 40px; min-width: 40px; }
+    ::-webkit-scrollbar-thumb:hover, ::-webkit-scrollbar-thumb:active { background-color: var(--sb-thumb-on); border-width: 1.5px; }
+  }
   body.commenting, body.commenting * { cursor: default; }
   body.commenting #hint, body.commenting #size { display: none !important; }
+  /* (Its width and the comment's height are set in script: the box grows with the comment, see fitCard.) */
   #card { position: fixed; z-index: 5; width: 330px; display: flex; flex-direction: column; gap: 8px; padding: 12px; color: var(--text);
     background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 18px 50px rgba(0, 0, 0, .5);
     font: 13px/1.4 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; user-select: text; box-sizing: border-box; }
   #card[hidden] { display: none; }
-  #card .head { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+  #card .head { display: flex; align-items: center; gap: 6px; min-width: 0; }
   #card .head b { flex: none; font-weight: 600; }
   #card .head span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--dim); }
-  #card textarea { width: 100%; min-height: 84px; max-height: 240px; padding: 8px 10px; color: var(--text); background: var(--field);
-    border: 1px solid var(--line); border-radius: 8px; font: inherit; line-height: 1.45; resize: vertical; box-sizing: border-box; cursor: text; }
+  #card textarea { width: 100%; min-height: 84px; padding: 8px 10px; color: var(--text); background: var(--field);
+    border: 1px solid var(--line); border-radius: 8px; font: inherit; line-height: 1.45; resize: none; overflow-y: hidden; box-sizing: border-box; cursor: text; }
+  /* Fix spelling, at the head's right; under the comment, what it fixed and the words to choose for. */
+  #card .head .fix { flex: none; margin: -3px -6px -3px auto; display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 7px;
+    color: var(--dim); background: transparent; border-color: transparent; font-size: 12px; }
+  #card .head .fix:hover { color: var(--text); background: var(--button-hover); }
+  #card .fix svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  #card .spell { display: flex; flex-direction: column; gap: 6px; max-height: 168px; overflow-y: auto; font-size: 12px; }
+  #card .spell[hidden] { display: none; }
+  #card .spell-note { color: var(--dim); }
+  #card .spell-row { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+  #card .spell-word { margin-right: 3px; text-decoration: underline wavy #e5484d; text-underline-offset: 3px; overflow-wrap: anywhere; }
+  #card .spell button { height: 22px; padding: 0 8px; border-radius: 6px; font-size: 12px; }
+  #card .spell button.first { color: #fff; background: var(--primary); border-color: var(--primary); }
+  #card .spell button.first:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
+  #card .spell button.leave { color: var(--dim); background: transparent; border-color: transparent; }
+  #card .spell button.leave:hover { color: var(--text); background: var(--button-hover); }
   #card textarea:focus { border-color: var(--focus); outline: none; box-shadow: 0 0 0 3px var(--soft); }
   #card textarea::placeholder { color: var(--dim); }
   #card .keys { color: var(--dim); font-size: 12px; }
@@ -104,8 +133,10 @@
 <div id="size"></div>
 <div id="hint"><span><b>Drag</b> to snap an area</span><span><b>Click</b> a window to snap it</span><span><kbd>Esc</kbd> cancel</span></div>
 <form id="card" hidden autocomplete="off">
-  <div class="head"><b id="c-title">Snap</b><span id="c-app"></span></div>
+  <div class="head"><b id="c-title">Snap</b><span id="c-app"></span>
+    <button type="button" id="c-fix" class="fix" title="Fix the spelling with Windows’ own spell checker, on this computer (F7)"><svg viewBox="0 0 24 24"><path d="M2.5 15.5 6.6 5l4.1 10.5M4 11.7h5.2"/><path d="m11.5 15.2 3.6 3.6 6.6-7.6"/></svg>Fix spelling</button></div>
   <textarea id="c-text" rows="4" spellcheck="true" placeholder="Describe what you see here…"></textarea>
+  <div class="spell" id="c-spell" hidden></div>
   <div class="keys">Enter saves and copies it as a picture<br>Shift+Enter new line · Esc discards the snap</div>
   <div class="row">
     <button type="button" id="c-discard" title="Throw this snap away">Discard</button>
@@ -133,6 +164,7 @@
     <button type="button" id="r-discard" title="Stop and throw the video away"><span>Discard</span></button>
   </div>
 </div>
+<script src="scaffapps-spelling.js"></script>
 <script>
 (() => {
   const shot = document.getElementById('shot');
@@ -293,8 +325,9 @@
   addEventListener('keydown', (e) => {
     if (asking) {
       if (e.key === 'Escape') answer('discard');
-      // Enter saves; Shift+Enter starts a new line.
+      // Enter saves; Shift+Enter starts a new line. F7 fixes the spelling, as in Word.
       else if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); answer('save'); }
+      else if (e.key === 'F7') { e.preventDefault(); spelling.run(); }
       return;
     }
     if (finished) return;
@@ -306,22 +339,84 @@
   const card = document.getElementById('card');
   const text = document.getElementById('c-text');
   let asking = false;
+  let cardArea = null;      // the area the box is beside
+  let cardSide = '';        // right, left, below or above it, or inside its corner
+  const CARD_W = 330, CARD_MAX_W = 640, GAP = 12, M = 8, FIELD_MIN = 84;
 
-  // Right of the area, else left of it, below or above it; else inside its corner.
-  function placeCard(r) {
-    const W = innerWidth, H = innerHeight, gap = 12, m = 8;
+  // Right of the area, else left of it, below or above it; else inside its
+  // corner. Chosen once, at the box's first size; as the comment gets longer
+  // the box grows on that side (see fitCard).
+  function chooseSide(r) {
+    const W = innerWidth, H = innerHeight;
     const cw = card.offsetWidth, ch = card.offsetHeight;
-    const clampX = (x) => Math.min(W - cw - m, Math.max(m, x));
-    const clampY = (y) => Math.min(H - ch - m, Math.max(m, y));
-    let x, y;
-    if (r.x + r.w + gap + cw <= W - m) { x = r.x + r.w + gap; y = clampY(r.y); }
-    else if (r.x - gap - cw >= m) { x = r.x - gap - cw; y = clampY(r.y); }
-    else if (r.y + r.h + gap + ch <= H - m) { x = clampX(r.x + r.w - cw); y = r.y + r.h + gap; }
-    else if (r.y - gap - ch >= m) { x = clampX(r.x + r.w - cw); y = r.y - gap - ch; }
-    else { x = clampX(r.x + r.w - cw - 16); y = clampY(r.y + r.h - ch - 16); }
-    card.style.left = x + 'px';
-    card.style.top = y + 'px';
+    if (r.x + r.w + GAP + cw <= W - M) return 'right';
+    if (r.x - GAP - cw >= M) return 'left';
+    if (r.y + r.h + GAP + ch <= H - M) return 'below';
+    if (r.y - GAP - ch >= M) return 'above';
+    return 'inside';
   }
+
+  // The most room the box has where it is: { w, h }.
+  function room(r, side) {
+    const W = innerWidth, H = innerHeight;
+    if (side === 'right') return { w: W - M - (r.x + r.w + GAP), h: H - 2 * M };
+    if (side === 'left') return { w: r.x - GAP - M, h: H - 2 * M };
+    if (side === 'below') return { w: W - 2 * M, h: H - M - (r.y + r.h + GAP) };
+    if (side === 'above') return { w: W - 2 * M, h: r.y - GAP - M };
+    return { w: W - 2 * M, h: H - 2 * M };
+  }
+
+  // Beside the area, on its side, never off the screen: grown taller, it moves
+  // up the screen; wider on the left or below, it reaches further left.
+  function placeCard() {
+    const r = cardArea, W = innerWidth, H = innerHeight;
+    const cw = card.offsetWidth, ch = card.offsetHeight;
+    const clampX = (x) => Math.min(W - cw - M, Math.max(M, x));
+    const clampY = (y) => Math.min(H - ch - M, Math.max(M, y));
+    let x, y;
+    if (cardSide === 'right') { x = r.x + r.w + GAP; y = clampY(r.y); }
+    else if (cardSide === 'left') { x = r.x - GAP - cw; y = clampY(r.y); }
+    else if (cardSide === 'below') { x = clampX(r.x + r.w - cw); y = r.y + r.h + GAP; }
+    else if (cardSide === 'above') { x = clampX(r.x + r.w - cw); y = r.y - GAP - ch; }
+    else { x = clampX(r.x + r.w - cw - 16); y = clampY(r.y + r.h - ch - 16); }
+    card.style.left = Math.round(x) + 'px';
+    card.style.top = Math.round(y) + 'px';
+  }
+
+  // The box grows with the comment rather than scroll it: taller first, up to
+  // half the screen or the room there is; then wider (to 640 px, or the room
+  // beside the area); then taller again, to the room there is. Only then does
+  // the comment scroll, with the SCAFFApps scrollbar. Shorter, it shrinks back.
+  function fitCard() {
+    if (card.hidden || !cardArea) return;
+    const space = room(cardArea, cardSide);
+    const maxW = Math.max(CARD_W, Math.min(CARD_MAX_W, Math.floor(space.w)));
+    const soft = Math.min(space.h, innerHeight / 2);
+    const top = text.scrollTop;
+    text.style.overflowY = 'hidden';
+    // The comment's full height at width w, and the rest of the box's.
+    const measure = (w) => {
+      card.style.width = w + 'px';
+      text.style.height = '0px';
+      return { need: Math.max(FIELD_MIN, text.scrollHeight + 2), rest: card.offsetHeight - text.offsetHeight };
+    };
+    let w = CARD_W, m = measure(w);
+    while (m.rest + m.need > soft && w < maxW) m = measure(w = Math.min(maxW, w + 40));
+    const fits = m.rest + m.need <= space.h;
+    text.style.height = (fits ? m.need : Math.max(FIELD_MIN, Math.floor(space.h - m.rest))) + 'px';
+    text.style.overflowY = fits ? 'hidden' : 'auto';
+    text.scrollTop = top;
+    placeCard();
+  }
+  text.addEventListener('input', fitCard);
+
+  const spelling = window.ScaffSpelling.attach({
+    box: text,
+    panel: document.getElementById('c-spell'),
+    check: (t) => window.overlay.spelling(t),
+    changed: fitCard,
+  });
+  document.getElementById('c-fix').onclick = () => spelling.run();
 
   function answer(action) {
     if (!asking) return;
@@ -338,7 +433,9 @@
       document.body.classList.add('commenting');
       draw(r, 'window', '');
       card.hidden = false;
-      placeCard(r);
+      cardArea = r;
+      cardSide = chooseSide(r);
+      fitCard();
       asking = true;
       text.focus();
     });

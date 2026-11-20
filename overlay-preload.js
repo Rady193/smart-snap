@@ -20,6 +20,8 @@ contextBridge.exposeInMainWorld('overlay', {
   onApp: (callback) => ipcRenderer.on('overlay-app', (_event, name) => callback(name)),
   // { action: "save" | "open" | "discard", text }
   commentDone: (answer) => ipcRenderer.send('overlay-comment-done', answer),
+  // The comment's spelling mistakes, by Windows' spell checker (see scaffapps-spelling-main.js).
+  spelling: (text) => ipcRenderer.invoke('spelling-check', String(text || '')),
   // Recording a video, what the bar beside the area shows: { stage: "ready" |
   // "starting" | "recording" | "paused", area, sound, countdown }, or
   // { press: "start" } when Enter is pressed.

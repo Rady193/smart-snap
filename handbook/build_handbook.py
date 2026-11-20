@@ -107,6 +107,24 @@ def seed(profile, material, icon):
 
 
 # ------------------------------------------------------------------------------------------- the pictures
+# The selection page's bridge to Smart Snap (overlay-preload.js), stood in for: it is shown the made-up desktop as
+# Smart Snap shows it the frozen screen (raw pixels, blue first), then revealed.
+OVERLAY_BRIDGE = ("window.overlay = { onImage: (cb) => { window.__image = cb }, onWindows: () => {}, ready: () => {},"
+                  " onReveal: (cb) => { window.__reveal = cb }, revealed: () => {}, done: () => {},"
+                  " onComment: (cb) => { window.__comment = cb }, onApp: (cb) => { window.__app = cb }, commentDone: () => {},"
+                  " spelling: async () => ({ mistakes: [] }),"
+                  " onRecord: (cb) => { window.__record = cb }, record: () => {}, pointer: () => {} }")
+FREEZE = """async ([src, windows, purpose]) => {
+  const img = new Image(); img.src = src; await img.decode();
+  const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
+  const g = c.getContext('2d'); g.drawImage(img, 0, 0);
+  const d = g.getImageData(0, 0, c.width, c.height).data;
+  for (let i = 0; i < d.length; i += 4) { const r = d[i]; d[i] = d[i + 2]; d[i + 2] = r; }
+  window.__image({ pixels: new Uint8Array(d.buffer), width: c.width, height: c.height, scale: devicePixelRatio, windows, purpose });
+  window.__reveal();
+}"""
+
+
 def overlay_pictures(material):
     """Choosing an area: the app's own selection page (app/overlay.html) over the made-up desktop, the window under the
     mouse outlined; then an area dragged and let go, with its comment being written in the box beside it."""
@@ -117,10 +135,9 @@ def overlay_pictures(material):
     with sync_playwright() as p:
         b = p.chromium.launch(channel="msedge", headless=True)
         page = b.new_page(viewport={"width": 1600, "height": 900}, device_scale_factor=1.5)
-        page.add_init_script("window.overlay = { onImage: (cb) => { window.__image = cb }, ready: () => {}, done: () => {},"
-                             " onComment: (cb) => { window.__comment = cb }, onApp: (cb) => { window.__app = cb }, commentDone: () => {} }")
+        page.add_init_script(OVERLAY_BRIDGE)
         page.goto((ROOT / "app" / "overlay.html").as_uri())
-        page.evaluate("([src, windows]) => window.__image({ src, windows })", [src, wins])
+        page.evaluate(FREEZE, [src, wins, "snap"])
         page.wait_for_timeout(500)
         page.mouse.move(1180, 420)
         page.wait_for_timeout(300)
@@ -153,12 +170,9 @@ def record_pictures(material):
         page = b.new_page(viewport={"width": 1600, "height": 900}, device_scale_factor=1.5)
         # (the page's clock can be put forward, so the time reads as it does a while into a recording)
         page.add_init_script("(() => { const now = performance.now.bind(performance); window.__ahead = 0;"
-                             " performance.now = () => now() + window.__ahead; })();"
-                             "window.overlay = { onImage: (cb) => { window.__image = cb }, ready: () => {}, done: () => {},"
-                             " onComment: () => {}, onApp: () => {}, commentDone: () => {},"
-                             " onRecord: (cb) => { window.__record = cb }, record: () => {}, pointer: () => {} }")
+                             " performance.now = () => now() + window.__ahead; })();" + OVERLAY_BRIDGE)
         page.goto((ROOT / "app" / "overlay.html").as_uri())
-        page.evaluate("(src) => window.__image({ src, windows: [], purpose: 'record' })", src)
+        page.evaluate(FREEZE, [src, [], "record"])
         page.wait_for_timeout(500)
         page.evaluate("document.getElementById('shot').draggable = false")
         page.mouse.move(610, 190)

@@ -244,6 +244,20 @@ aside {
 .mark.point::before { content: ""; position: absolute; left: -16px; top: -16px; width: 32px; height: 32px; border: 2px solid var(--mark); border-radius: 50%; background: rgba(229, 72, 77, .14); }
 .markbar { display: flex; align-items: center; gap: 12px; font-size: 12px; }
 textarea { resize: vertical; min-height: 64px; max-height: 220px; padding: 9px 11px; line-height: 1.45; }
+/* Fix spelling, under the comment: the button on the right; on the left, what it fixed and the words to choose for. */
+.comment-tools { display: flex; align-items: flex-start; gap: 12px; margin-top: -4px; }
+.comment-tools .fix { flex: none; margin-left: auto; gap: 5px; font-size: 12px; }
+.comment-tools .fix svg.icon { width: 15px; height: 15px; }
+.spell { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; max-height: 120px; overflow-y: auto; font-size: 12px; }
+.spell[hidden] { display: none; }
+.spell-note { color: var(--dim); }
+.spell-row { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+.spell-word { margin-right: 3px; text-decoration: underline wavy var(--mark); text-underline-offset: 3px; overflow-wrap: anywhere; }
+.spell button { height: 24px; padding: 0 9px; border-radius: 6px; font-size: 12px; }
+.spell button.first { color: #fff; background: var(--accent-strong); border-color: var(--accent-strong); }
+.spell button.first:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+.spell button.leave { color: var(--dim); background: none; border-color: transparent; }
+.spell button.leave:hover { color: var(--text); background: var(--surface-3); }
 .actions { display: flex; align-items: center; gap: 8px; }
 
 #empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; text-align: center; }

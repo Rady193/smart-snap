@@ -2,7 +2,7 @@
 
 Smart Snap takes screenshots and screen videos that remember where they came from. Each snap records the application it was taken from, the window title and, for web browsers, the address of the page. Add a comment, mark a spot, and turn all your snaps into one PDF report.
 
-Version 1.3.2 · Windows 10 and 11 (64-bit) · Published by SCAFFApps
+Version 1.4.0 · Windows 10 and 11 (64-bit) · Published by SCAFFApps
 
 The **[handbook](https://github.com/Rady193/smart-snap/releases/latest)** (`Smart-Snap-Handbook-<version>.pdf`, on the Releases page) explains everything, with pictures.
 
@@ -25,7 +25,7 @@ The **[handbook](https://github.com/Rady193/smart-snap/releases/latest)** (`Smar
 
 ## Install
 
-Download `Smart-Snap-Setup-1.3.2.exe` from the [Releases page](https://github.com/Rady193/smart-snap/releases/latest) and run it, or install it from the **SCAFFApps Suite**. It installs for everyone on the computer, in `C:\Program Files\SCAFFApps\Smart Snap` unless you choose another folder, so Windows asks for administrator permission once. It adds a desktop shortcut and a Start menu shortcut in the **SCAFFApps** folder, and can be removed from Windows Settings. A copy installed by an earlier version in `C:\Program Files\Smart Snap` moves to the SCAFFApps folder when it updates.
+Download `Smart-Snap-Setup-1.4.0.exe` from the [Releases page](https://github.com/Rady193/smart-snap/releases/latest) and run it, or install it from the **SCAFFApps Suite**. It installs for everyone on the computer, in `C:\Program Files\SCAFFApps\Smart Snap` unless you choose another folder, so Windows asks for administrator permission once. It adds a desktop shortcut and a Start menu shortcut in the **SCAFFApps** folder, and can be removed from Windows Settings. A copy installed by an earlier version in `C:\Program Files\Smart Snap` moves to the SCAFFApps folder when it updates.
 
 Since 1.1.0 Smart Snap is installed, not portable. A portable copy from before cannot update itself to it: install it with the installer once, then delete the portable file.
 
@@ -68,11 +68,13 @@ The same three are buttons at the top of the Smart Snap window and items in the 
 
 **Keep on top.** The pin in the top bar keeps the Smart Snap window above other programs, for example beside the app you are testing, until you click it again; Smart Snap remembers it. The window is never in a snap: it steps aside while the picture is taken and comes back afterwards.
 
-**The comment box.** Once an area is chosen, it stays outlined and a box beside it asks for the snap's comment, as Multi Screens asks for a note's. The picture is already taken: the box and the dimming are not in it. Type, then:
+**The comment box.** Once an area is chosen, it stays outlined and a box beside it asks for the snap's comment, as Multi Screens asks for a note's. The picture is already taken: the box and the dimming are not in it. The box grows with what you write, on the side of the area where it is: taller first, then wider, and only then does the text scroll. Type, then:
 
 - **Save** (or **Enter**; **Shift + Enter** starts a new line) keeps the snap with its comment and copies it to the clipboard as a picture: that snap's part of the report alone (its number, application, comment, screenshot and details), ready to paste into a chat, an email or a document. The picture is there about a second later. Smart Snap stays out of the way, so you can go straight on to the next snap; the snap is in its list, and if its window is open it says the snap was copied.
 - **Save and open** keeps it and opens Smart Snap on it, to mark a spot or an area on the picture.
 - **Discard** (or **Esc**) throws the snap away.
+
+**Fix spelling** (at the box's top right, or **F7**, as in Word) corrects the comment with Windows' own spell checker, the one that underlines mistakes in red; nothing leaves the computer. What Windows is sure of is fixed at once: a typing slip on its autocorrect list ("teh" to "the", "i" to "I"), a word written twice, and a capital letter at the start of each sentence and line. A word it only has guesses for is shown under the text with them, the likeliest first: click the one you meant, or **Leave**. Ctrl + Z undoes the fixes. Addresses, file paths, codes, units after a number and words in capitals are left as they are. (It fixes spelling, not grammar: "it are" stays.)
 
 The comment can be left empty and written later in Smart Snap. Window and full-screen snaps have no box: Smart Snap opens on them as before.
 
@@ -123,7 +125,7 @@ Chrome and Edge hide `https://` in the address bar. Smart Snap puts it back so t
 
 The list on the left holds every snap, numbered in report order. Click one to work on it.
 
-- **Comment:** type in the box under the picture. It is saved as you type.
+- **Comment:** type in the box under the picture. It is saved as you type. **Fix spelling** under it (or **F7**) corrects it, as in the comment box.
 - **Mark:** click the picture to circle a spot, or drag to box an area. A new mark replaces the old one; **Remove mark** takes it away.
 - **Link:** correct or add the page address. The button beside it opens the address in your browser.
 - **Copy picture** puts the picture on the clipboard (also Ctrl + C when you are not typing).

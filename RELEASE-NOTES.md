@@ -1,5 +1,45 @@
 # Release notes
 
+## 1.4.0 — 20 November 2026
+
+**Fix spelling** in the comment boxes, with Windows' own spell checker, on this computer; and the comment box beside a snap grows with what you write.
+
+### Downloads
+
+| File | Size | SHA-256 |
+|---|---|---|
+| `Smart-Snap-Setup-1.4.0.exe` | 71.1 MB | `B9BF8520699096E5DC078727B69B6064400AAA073DA41A627A1EABD7E7957C0D` |
+| `Smart-Snap-Handbook-1.4.0.pdf` | 4.3 MB | `6CBA96CB9F85B378DA55E38654D2179509AA4451B24B8F395356AA351488E350` |
+
+For 64-bit Windows 10 and 11. Not code-signed, so Windows SmartScreen may ask for confirmation on first run.
+
+### New
+
+- **Fix spelling**, at the top right of the comment box beside a snap and under the comment in Smart Snap's window, or **F7** as in Word. Windows' own spell checker reads the comment, the one that underlines mistakes in red; nothing leaves the computer. What it is sure of is fixed at once: a typing slip on its autocorrect list ("teh" to "the", "i" to "I"), a word written twice, and a capital letter at the start of each sentence and line. A word it only has guesses for is shown under the text with them, the likeliest first, to click; **Leave** keeps it. Windows' own first guess is often not the word meant ("prefere": preferer, prefer…), so the guesses are put in order: the closest to what was typed, and the plain word the others are made from. Ctrl + Z undoes the fixes. Addresses, file paths, codes, units after a number and words in capitals are left as they are. It fixes spelling, not grammar.
+
+### Changed
+
+- **The comment box grows with the comment** instead of scrolling, on the side of the area where it opened: taller first, up to half the screen or the room there is; then wider, up to twice its width; then taller again. Only then does the comment scroll. Near the foot of the screen it grows upwards, and on the left of an area it grows to the left. Shorter again, it shrinks back. Its corner grip is gone.
+- **Its scrollbar is the SCAFFApps one**, a slim purple bar, no longer Windows' grey one with arrows.
+- **The handbook**, `Smart-Snap-Handbook-1.4.0.pdf`: Taking a snap and Working on a snap say how to fix the spelling; the comment box and the window pictures retaken.
+- Multi Screens 1.11.0 has the same Fix spelling in its note boxes, from the same code.
+
+### Updating from 1.3.2 or earlier
+
+- Settings > Updates > **Update now**, or **Update** in the SCAFFApps Suite.
+
+### Tested
+
+- The comment box and the window's comment box, from the source and from this installer's build, in hidden test windows with Windows' real spell checker (British English, as on the developer's laptop): "spacing … i would prefere …" became "Spacing … I would prefere …" with "prefer" offered first; choosing it wrote "prefer"; Ctrl + Z undid the choice, then the fixes, as two steps. "teh grammer of this sentance is is wrong" fixed "teh", "sentance" and "is is" at once and offered "grammar" first. SCAFFERP, www.scaffapps.com, a path, `my_var` and "16 px" were left as they were.
+- The box growing: beside an area on the left of the screen it grew from 85 to 527 pixels tall and from 330 to 640 wide, moving up to stay on the screen; above an area near the foot of the screen it reached its room (400 pixels) and widened to the left before scrolling, with the SCAFFApps scrollbar. Shortened, it went back to its first size. Dark and light appearance.
+- The spell checker answers in a few hundredths of a second once ready; it gets ready as the box takes the keyboard (the first check from a cold start took about 0.4 s).
+- The SCAFFApps design-language check passes, the new shared files included. Microsoft Defender finds nothing in the installer or the handbook.
+
+### Not tested
+
+- With a real keyboard and mouse (the tests type and click from code), and a spell checker in another language than English.
+- This installer over 1.3.2.
+
 ## 1.3.2 — 18 November 2026
 
 An area snap freezes the screen the moment you press the key, as Windows' Snipping Tool does: an open menu and the item lit under the mouse stay in the snap.
